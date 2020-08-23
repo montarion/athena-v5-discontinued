@@ -1,0 +1,13 @@
+Make a modular assistant. I really mean modular.
+
+the core has tasks, websocket networking(including handling),
+a way to save user data, and a way to find new modules.
+
+
+everything else is a module, and the system MUST work perfectly fine without those modules
+(though modules may specify dependencies)
+anime is a module
+reddit is a module
+website is a module
+discord could be a module
+handling clients is a module
