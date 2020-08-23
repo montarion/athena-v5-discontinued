@@ -1,5 +1,6 @@
 from tinydb import TinyDB, Query
 from tinydb.storages import MemoryStorage
+from ast import literal_eval as eval
 
 class Database:
     def __init__(self, storage="json"):
@@ -23,10 +24,16 @@ class Database:
         """Usage: Database().update({"name": "apple", "completed": True},"name", "apple", "test")"""
         if table:
             self.table = self.db.table(table)
+
         if type(query) != int:
             id = self.table.upsert(data, Query()[field] == query)
         else:
-            id = self.table.upsert(data, doc_ids=query)
+            if self.table.contains(doc_id=query):
+                # already have an id, so update
+                id = self.table.update(data, doc_ids=[query])
+            else:
+                # else insert
+                id = self.table.insert(data)
         return id
 
     def query(self, field, query, table=None):
@@ -34,7 +41,6 @@ class Database:
         if table:
             self.table = self.db.table(table)
 
-        print(self.table.all())
         Object = Query()
         result = self.table.search(Object[field] == query)
         if len(result) == 1:
