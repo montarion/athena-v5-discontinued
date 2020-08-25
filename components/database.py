@@ -1,51 +1,76 @@
-from tinydb import TinyDB, Query
-from tinydb.storages import MemoryStorage
 from ast import literal_eval as eval
+from components.logger import Logger
+import json, traceback
 
 class Database:
-    def __init__(self, storage="json"):
-        if storage == "json":
-            self.db = TinyDB('data/db.json')
-        else:
-            #logger("using in-memory database")
-            self.db = TinyDB(storage=MemoryStorage)
-        self.table = self.db.table("main")
+    membase = {} # this is specific to the calling module
+    def __init__(self):
+        self.logger = Logger("DATABASE").logger
+        self.db = ('data/db.json')
+        self.table = "main"
 
-    def write(self, data, table=None):
-        """Usage: Database().write({"name": "apple"}, "test")"""
+    def write(self, key, value, table=None):
+        """Usage: Database().write("foo", {"foo":"bar"}, "test")"""
+        #self.logger("Writing..")
+        # fix datatypes
+        key = json.loads(json.dumps(key))
+        if type(key) != str:
+            key = str(key)
+        value = json.loads(json.dumps(value))
 
         if table:
-            self.table = self.db.table(table)
+            self.table = table
 
-        id = self.table.insert(data)
-        return id
+        #t = self.gettable(table)
 
-    def update(self, data, field, query, table=None):
-        """Usage: Database().update({"name": "apple", "completed": True},"name", "apple", "test")"""
+
+        with open(self.db) as f:
+            # get data
+            fulldata = json.loads(f.read())
+
+
+        tables = fulldata.keys()
+
+        if table not in tables:
+            fulldata[table] = {}
+
+        data = json.loads(json.dumps(fulldata[table]))
+
+        #self.logger(f"value exists: {value in data.values()}", "debug", "blue")
+        #self.logger(f"data: {data}", "debug", "blue")
+        #self.logger(f"old key is of type: {type(list(data.keys())[0])}", "debug", "blue")
+        #self.logger(f"new key is of type: {type(key)}", "debug", "blue")
+        #self.logger(f"key in list of old keys: {key in data.keys()}", "debug", "blue")
+        if key not in data.keys():
+            #self.logger("writing data..")
+            # change data
+            data[key] = value
+
+            # save in proper form
+            fulldata[table] = data
+            #self.logger(f"new data: {data}", "debug", "blue")
+
+            # write fulldata to dict
+            with open(self.db, "w") as f:
+                f.write(json.dumps(fulldata))
+
+
+    def query(self, query, table=None):
+        """Usage: Database().query("name", "test")"""
         if table:
-            self.table = self.db.table(table)
+            self.table = table
 
-        if type(query) != int:
-            id = self.table.upsert(data, Query()[field] == query)
-        else:
-            if self.table.contains(doc_id=query):
-                # already have an id, so update
-                id = self.table.update(data, doc_ids=[query])
-            else:
-                # else insert
-                id = self.table.insert(data)
-        return id
+        try:
+            with open(self.db) as f:
+                fulldata = json.loads(f.read())
 
-    def query(self, field, query, table=None):
-        """Usage: Database().query("name", "apple", "test")"""
-        if table:
-            self.table = self.db.table(table)
-
-        Object = Query()
-        result = self.table.search(Object[field] == query)
-        if len(result) == 1:
-            return result[0]
-        return result
+            data = fulldata[table]
+            result = data[query]
+            msg = {"status": 200, "resource":result}
+            return msg
+        except KeyError as e:
+            res = {"status": 404, "resource": f"Query: \"{query}\" not found"}
+            return res
 
     def remove(self, query, table=None):
         """NOT IMPLEMENTED"""
@@ -53,6 +78,40 @@ class Database:
         if table:
             self.table = self.db.table(table)
 
-    def gettable(self, tablequery):
-        realtable = self.db.table(tablequery)
-        return realtable
+        with open(self.db) as f:
+            # get data
+            fulldata = json.loads(f.read())
+
+
+        tables = fulldata.keys()
+        if table not in tables:
+            fulldata[table] = {}
+
+        data = fulldata[table]
+
+        # remove data
+        del data[key]
+
+        # save in proper form
+        fulldata[table] = data
+
+        # write fulldata to dict
+        with open(self.db, "w") as f:
+            f.write(json.dumps(fulldata))
+
+
+    def gettable(self, table):
+        """Usage: Database().gettable("table")"""
+
+        with open(self.db) as f:
+            fulldata = json.loads(f.read())
+
+        try:
+            table = fulldata[table]
+            res = {"status": 200, "resource": table}
+        except KeyError:
+            res = {"status": 404, "resource": f"table: \"{table}\" not found"}
+        #self.logger(res, "debug", "yellow")
+        return res
+
+    
