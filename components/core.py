@@ -21,8 +21,11 @@ class Core:
         os.chdir("modules")
         filelist = os.listdir()
         os.chdir(base)
-        filelist.remove("__pycache__")
-        filelist.remove("template.py")
+        rmlist = ["__pycache__", "template.py", "output.txt"]
+        for item in rmlist:
+            if item in filelist:
+                filelist.remove(item)
+        
 
         # import them
         for file in filelist:

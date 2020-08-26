@@ -10,14 +10,17 @@ class Networking:
 
     async def runserver(self, websocket, path):
         while True:
-            data = await websocket.recv()
-            msg = json.loads(data)
-            print(msg)
-            await self.msghandler(websocket, msg)
-
+            try:
+                data = await websocket.recv()
+                msg = json.loads(data)
+                await self.msghandler(websocket, msg)
+            except ConnectionResetError as e1:
+                pass
+            except Exception as e2:
+                self.logger(f"Error: {str(e2)}", "alert", "red")
+            
     def createid(self):
         table = self.database.gettable("users")
-        self.logger(table, "debug", "red")
         if table["status"] == 200:
             curid = len(table)
             newid = curid + 1
@@ -27,14 +30,13 @@ class Networking:
 
     def findtarget(self, query):
         idlist = []
+        self.logger(f"searching for {query}", "debug")
         res = self.database.gettable("users")
         for key in res["resource"]:
             dic = res["resource"]
-            #searchres = dic[key].get(query, False)
             searchres = query in dic[key].values()
             if searchres:
                 idlist.append(dic[key]["id"])
-        self.logger(idlist, "debug", "green")
         return idlist
 
     async def send(self, message, targetidlist):
@@ -83,11 +85,11 @@ class Networking:
         result = {"success": [], "failure": []}
 
         for id in idlist:
-            result = self.send(msg, idlist)
+            result = asyncio.get_event_loop().run_until_complete(self.send(msg, idlist))
         return result
 
     def startserving(self):
-        self.logger(self.database.query("favfruit", "test"), "debug", "yellow")
+        #self.logger(self.database.query("favfruit", "test"), "debug", "yellow")
 
         serveserver = websockets.server.serve(self.runserver, "0.0.0.0", 8765, loop=self.loop)
         asyncio.set_event_loop(self.loop)

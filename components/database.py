@@ -41,18 +41,18 @@ class Database:
         #self.logger(f"old key is of type: {type(list(data.keys())[0])}", "debug", "blue")
         #self.logger(f"new key is of type: {type(key)}", "debug", "blue")
         #self.logger(f"key in list of old keys: {key in data.keys()}", "debug", "blue")
-        if key not in data.keys():
+        #if key not in data.keys():
             #self.logger("writing data..")
             # change data
-            data[key] = value
+        data[key] = value
 
             # save in proper form
-            fulldata[table] = data
+        fulldata[table] = data
             #self.logger(f"new data: {data}", "debug", "blue")
 
             # write fulldata to dict
-            with open(self.db, "w") as f:
-                f.write(json.dumps(fulldata))
+        with open(self.db, "w") as f:
+            f.write(json.dumps(fulldata))
 
 
     def query(self, query, table=None):

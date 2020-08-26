@@ -44,7 +44,7 @@ class Anime:
                 self.maindict[show]["lastep"] = episode
                 animedict = self.dbobj.gettable("anime")["resource"]
                 self.logger(f"current: {show}")
-                if animedict.get("lastshow", {"title":"show"})["title"] != "pizza": #show:
+                if animedict.get("lastshow", {"title":"show"})["title"] != show:
                     self.download(show, link)
                     ct = int(time.time())
                     self.maindict[show]["aired_at"] = ct
@@ -53,14 +53,13 @@ class Anime:
                     #if len(targetlist) == 0:
                     #Event().anime("aired")
                     idlist = self.networking.findtarget("greytest")
+                    self.logger(f"REMOVE HARDCODED TARGET", "alert", "yellow")
                     category = "anime"
                     type = "latest"
                     artdict = {"cover": imagelink, "banner": bannerlink}
                     data = {"title":show, "lastep": episode, "art":artdict, "aired_at":ct}
                     metadata = {"status": 200}
-                    self.logger(f"Starting to send message..")
                     res = self.networking.messagebuilder(category, type, data, metadata, "all")
-                    self.logger(res)
                     Database().write("lastshow", sessiondict, "anime")
                 x += 1
             else:
