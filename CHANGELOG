@@ -1,2 +1,2 @@
 24-08-2020 - SERVER - Finished first iteration of module system. add better dependency handling, and respect capabilities.
-
+25-08-2020 - SERVER - reworked database system to use pure json
