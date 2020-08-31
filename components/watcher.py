@@ -69,6 +69,7 @@ class Watcher:
             result[class] is class object(self in a class) that you want to call when triggered
             arg keys must match the name of the parameter.
             publish a message like this: r.publish("foo", json.dumps({"bar":"argument content"})
+            to publish a message, see the publish function.
         """
         name = regdata["trigger"]["class"]
         self.subscriptions.append(name)
@@ -81,3 +82,20 @@ class Watcher:
         self.listenstop = True
         self.logger("stopped")
         self.startlisten()
+
+    def publish(self, classinstance, data):
+        """
+            Allows every class to publish without import redis.
+            Usage: Watcher().publish(Foo() / "Foo", {"bar": "argumentcontent"}
+            Note: using the class so that you can pass "self" from within the module.
+                if using a string, that string must equal the name of the class of the result you registered earlier
+        """
+        if type(classinstance) != str:
+            name = classinstance.__class__.__name__
+        else:
+            name = classinstance
+        self.logger(name)
+        if type(data) == dict:
+            data = json.dumps(data)
+        self.r.publish(name, data)
+        
