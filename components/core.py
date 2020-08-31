@@ -4,10 +4,12 @@ from components.database import Database
 from components.networking import Networking as nw
 from components.tasks import Tasks
 from components.logger import Logger
+from components.watcher import Watcher as watcher
 from time import sleep
 
 #test
 Networking = ""
+Watcher = ""
 class Core:
     def __init__(self):
         self.moduledict = {}
@@ -65,7 +67,7 @@ class Core:
             
             dependencies = self.moduledict[item]["attr"]["dependencies"]
             self.logger(f"DEPENDENCIES: {dependencies}")
-            coremodules = ["Networking", "Database"]
+            coremodules = ["Networking", "Database", "Watcher"]
             failedlist = [x for x in dependencies if x not in coremodules and x not in list(self.moduledict.keys())]
             if len(failedlist) > 0:
                 self.logger(f"couldn't meet dependencies for {item}")
@@ -77,7 +79,7 @@ class Core:
 
 
     def standard(self):
-        global Networking
+        global Networking, Watcher
         # init database
         self.db = Database()
 
@@ -87,6 +89,9 @@ class Core:
         t1 = threading.Thread(target=Networking.startserving)
         t1.start()
 
+        # start intermodule comms service
+        Watcher = watcher()
+        
         # discover modules
         self.discovermodules()
 
@@ -101,10 +106,8 @@ class Core:
             self.logger(dependencies)
             func = self.moduledict[module]["func"]
             self.logger(func)
-            #self.logger(getattr(self.thismod, str(x)), "debug", "blue")
             self.tasker.createtask(getattr(func(**dependencies), "startrun"), timing["count"], timing["unit"])
 
-        self.logger(Networking, "debug", "yellow")
         self.tasker.runfirst()
         while True:
             self.tasker.runall()
