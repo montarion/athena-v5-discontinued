@@ -18,7 +18,7 @@ class Networking:
                 pass
             except Exception as e2:
                 self.logger(f"Error: {str(e2)}", "alert", "red")
-            
+
     def createid(self):
         table = self.database.gettable("users")
         if table["status"] == 200:
@@ -89,10 +89,10 @@ class Networking:
         return result
 
     def startserving(self):
-        #self.logger(self.database.query("favfruit", "test"), "debug", "yellow")
-
-        serveserver = websockets.server.serve(self.runserver, "0.0.0.0", 8765, loop=self.loop)
+        self.logger("starting")
         asyncio.set_event_loop(self.loop)
+        serveserver = websockets.server.serve(self.runserver, "0.0.0.0", 9542, loop=self.loop)
+        #asyncio.set_event_loop(self.loop)
         self.loop.run_until_complete(serveserver)
         self.logger("waiting...")
         self.loop.run_forever()

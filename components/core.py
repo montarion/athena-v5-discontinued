@@ -31,7 +31,6 @@ class Core:
 
         # import them
         for file in filelist:
-            #self.logger(file)
             mod = importlib.import_module(f"modules.{file.split('.')[0]}")
 
             # read task data from them 
@@ -59,7 +58,6 @@ class Core:
 
             #print(attrdict)
             self.moduledict[name] = {"attr":attrdict, "func":func}
-            #self.logger(f"Starting modules: {list(self.moduledict.keys())}")
 
         # check dependencies
         removelist = []
@@ -85,7 +83,6 @@ class Core:
 
         # start networking
         Networking = nw(self.db)
-        self.logger(Networking, "debug", "yellow")
         t1 = threading.Thread(target=Networking.startserving)
         t1.start()
 
@@ -102,10 +99,7 @@ class Core:
             #dependencies = self.moduledict[module]["attr"]["dependencies"]
             #dependencies = {str(x):getattr(self.thismod, str(x))() for x in self.moduledict[module]["attr"]["dependencies"]}
             dependencies = {str(x):getattr(self.thismod, str(x)) for x in self.moduledict[module]["attr"]["dependencies"]}
-            self.logger(Networking)
-            self.logger(dependencies)
             func = self.moduledict[module]["func"]
-            self.logger(func)
             self.tasker.createtask(getattr(func(**dependencies), "startrun"), timing["count"], timing["unit"])
 
         self.tasker.runfirst()
