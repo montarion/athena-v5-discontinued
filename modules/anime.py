@@ -4,11 +4,12 @@ from components.database import Database
 from components.logger import Logger
 
 class Anime:
-    def __init__(self, Networking=None):
-        self.dependencies = ["Networking"]
+    def __init__(self, Networking=None, Watcher=None):
+        self.dependencies = ["Networking", "Watcher"]
         self.capabilities = ["timed"]
         self.timing = {"unit": "minutes", "count":2}
         self.networking = Networking
+        self.watcher = Watcher
  
         # other init stuff happens in startrun
 
@@ -61,6 +62,9 @@ class Anime:
                     metadata = {"status": 200}
                     res = self.networking.messagebuilder(category, type, data, metadata, "all")
                     Database().write("lastshow", sessiondict, "anime")
+
+                    # publish the data
+                    self.watcher().publish(self, data)
                 x += 1
             else:
                 number += 1
@@ -149,4 +153,5 @@ class Anime:
         else:
             self.maindict = {}
 
+        
         self.getshows()
