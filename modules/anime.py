@@ -64,7 +64,7 @@ class Anime:
                     Database().write("lastshow", sessiondict, "anime")
 
                     # publish the data
-                    self.watcher().publish(self, data)
+                    self.watcher.publish(self, data)
                 x += 1
             else:
                 number += 1
