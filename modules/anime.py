@@ -136,7 +136,6 @@ class Anime:
     def startrun(self):
         self.logger = Logger("Anime").logger
         self.dbobj = Database()
-        self.logger(self.networking, "debug", "yellow")
         prelist = self.dbobj.query("watchlist", "anime")
         if prelist["status"] == 200:
             self.watchlist = prelist["resource"]
