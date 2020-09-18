@@ -85,7 +85,7 @@ class Watcher:
 
     def publish(self, classinstance, data):
         """
-            Allows every class to publish without import redis.
+            Allows every class to publish without importing redis.
             Usage: Watcher().publish(Foo() / "Foo", {"bar": "argumentcontent"}
             Note: using the class so that you can pass "self" from within the module.
                 if using a string, that string must equal the name of the class of the result you registered earlier
