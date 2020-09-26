@@ -5,12 +5,11 @@ from components.logger import Logger
 
 class Anime:
     def __init__(self, Networking=None, Watcher=None):
-        self.dependencies = ["Networking", "Watcher"]
+        self.dependencies = {"tier": "user", "dependencies":["Networking", "Watcher"]}
         self.capabilities = ["timed"]
         self.timing = {"unit": "minutes", "count":2}
         self.networking = Networking
         self.watcher = Watcher
- 
         # other init stuff happens in startrun
 
     def getshows(self, number = 1):
@@ -29,6 +28,7 @@ class Anime:
             title, show, episode = self.cleantitle(entry["title"])
             link = entry["link"]
             if show in self.watchlist:
+                self.logger(f"current: {show}")
                 sessiondict["command"] = "anime"
                 sessiondict["title"] = show
                 sessiondict["episode"] = episode
@@ -44,7 +44,6 @@ class Anime:
 
                 self.maindict[show]["lastep"] = episode
                 animedict = self.dbobj.gettable("anime")["resource"]
-                self.logger(f"current: {show}")
                 if animedict.get("lastshow", {"title":"show"})["title"] != show:
                     self.download(show, link)
                     ct = int(time.time())
@@ -87,8 +86,10 @@ class Anime:
         variables = {'title': name}
         url = 'https://graphql.anilist.co'
         response = requests.post(url, json={'query': query, 'variables': variables})
+        self.logger(response)
         preurl = json.loads(response.text)["data"]["Media"]
 
+        self.logger(preurl, "debug", "red" )
         coverdict = preurl["coverImage"]
         bannerurl = preurl["bannerImage"]
         maxepisodes = preurl["episodes"]
@@ -137,9 +138,10 @@ class Anime:
 
         return result
 
-    def startrun(self):
+    def startrun(self, number = 1):
         self.logger = Logger("Anime").logger
         self.dbobj = Database()
+        self.publishchoice = "HorribleSubs"
         prelist = self.dbobj.query("watchlist", "anime")
         if prelist["status"] == 200:
             self.watchlist = prelist["resource"]
@@ -154,4 +156,4 @@ class Anime:
             self.maindict = {}
 
         
-        self.getshows()
+        self.getshows(number)
