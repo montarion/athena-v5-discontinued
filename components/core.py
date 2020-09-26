@@ -82,7 +82,7 @@ class Core:
         # create simple name:class object, to pass to watcher
         for classname in self.moduledict:
             self.classobjdict[classname] = classobj
-        self.logger(f"Starting modules: {list(self.moduledict)}")
+        self.logger(f"Running modules: {list(self.moduledict)}")
         self.logger("Discovery finished.")
 
 
@@ -99,6 +99,7 @@ class Core:
         # test
         self.discovermodules()
         # start intermodule comms service
+        self.logger(self.classobjdict)
         Watcher = watcher(self.classobjdict)
         
         # discover modules
