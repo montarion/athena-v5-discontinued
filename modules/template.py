@@ -2,7 +2,7 @@ from components.logger import Logger
 
 class Template:
     def __init__(self):
-        self.dependencies = []
+        self.dependencies = {"tier":"user", "dependencies":[]}
         self.capabilities = ["timed", "async"]
         self.timing = {"unit": "seconds", "count":2}
         # do not add init stuff
