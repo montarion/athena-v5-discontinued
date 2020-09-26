@@ -1,4 +1,4 @@
-import redis, json, threading
+import redis, json, threading, inspect
 from components.logger import Logger
 from time import sleep
 
@@ -29,6 +29,7 @@ class Watcher:
         while True:
             msg = self.p.get_message()
             if msg:
+                self.logger(msg)
                 channel = msg["channel"].decode()
                 data = msg["data"].decode()
                 try:
@@ -70,7 +71,7 @@ class Watcher:
         # skip
         if type(classname) == str:
             classobj = self.getclass(classname)
-            if type(classobj) != class:
+            if not inspect.isclass(classobj):
                 return "Class not found"
         else:
             classobj = classname
