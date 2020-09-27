@@ -69,7 +69,9 @@ class Core:
             
             tier = self.moduledict[item]["attr"]["dependencies"]["tier"]
             # TODO: use tier to seperate dependency loading into tiers, to mitigate intermodule dependency errors
+            self.logger(self.moduledict[item])
             dependencies = self.moduledict[item]["attr"]["dependencies"]["dependencies"]
+            capabilities = self.moduledict[item]["attr"]["capabilities"]
             self.logger(f"DEPENDENCIES: {dependencies}")
             coremodules = ["Networking", "Database", "Watcher"]
             failedlist = [x for x in dependencies if x not in coremodules and x not in list(self.moduledict.keys())]
@@ -98,6 +100,8 @@ class Core:
 
         # test
         self.discovermodules()
+
+        
         # start intermodule comms service
         self.logger(self.classobjdict)
         Watcher = watcher(self.classobjdict)
@@ -108,12 +112,20 @@ class Core:
         # start tasks
 
         for module in self.moduledict:
-            timing = self.moduledict[module]["attr"]["timing"]
+            #timing = self.moduledict[module]["attr"]["timing"]
             #dependencies = self.moduledict[module]["attr"]["dependencies"]
             #dependencies = {str(x):getattr(self.thismod, str(x))() for x in self.moduledict[module]["attr"]["dependencies"]}
             dependencies = {str(x):getattr(self.thismod, str(x)) for x in self.moduledict[module]["attr"]["dependencies"]["dependencies"]}
+            self.logger(dependencies, "debug", "blue")
+            capabilities = self.moduledict[module]["attr"]["capabilities"]
             classobj = self.moduledict[module]["classobj"]
-            self.tasker.createtask(getattr(classobj(**dependencies), "startrun"), timing["count"], timing["unit"])
+            self.logger(f"FIX TASK THREADING", "alert", "red")
+            if "blocking" in capabilities:
+                # use threaded
+                self.tasker.createthreadedtask(getattr(classobj(**dependencies), "startrun"))
+            else:
+                timing = self.moduledict[module]["attr"]["timing"]
+                self.tasker.createtask(getattr(classobj(**dependencies), "startrun"), timing["count"], timing["unit"])
 
         self.tasker.runfirst()
         while True:
