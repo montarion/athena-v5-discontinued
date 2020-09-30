@@ -119,3 +119,17 @@ class Watcher:
             data = json.dumps(data)
         self.r.publish(name, data)
         self.logger(f"published: {name}")
+
+    def getresult(self, regdata):
+        """
+            Allows one to get the result from any specific function.
+            Usage: regdata = {'trigger':{'class':'foo', 'function':'functorun()', 'args':{'foo':'bar},
+                             'result':{'class':Bar(), 'function':'funcname', 'args':{'foo':'bar'}}
+
+            trigger[class] is the name of the class you want updates from.
+            trigger[args] are the arguments that are sent to the functorun
+            result[class] is class object(self in a class) that you want to call when triggered
+            arg keys must match the name of the parameter.
+
+        """
+        pass
