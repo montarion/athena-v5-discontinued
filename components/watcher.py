@@ -10,6 +10,7 @@ class Watcher:
         self.classobjdict = classobjdict
 
         self.listenstop = False
+        self.trigfound = False
         self.subscriptions = []
         self.classdict = {}
         self.funcdict = {}
@@ -29,7 +30,7 @@ class Watcher:
         while True:
             msg = self.p.get_message()
             if msg:
-                self.logger(msg)
+                #self.logger(msg)
                 channel = msg["channel"].decode()
                 data = msg["data"].decode()
                 try:
@@ -40,26 +41,37 @@ class Watcher:
                 self.logger(f"Message: {data}")
                 if channel in self.funcdict.keys():
                     channeldict = self.funcdict[channel]
-                    trigger = channeldict["trigger"]["returnvalue"]
-                    #self.logger(trigger)
-                    #self.logger(data.keys())
-                    if trigger in data.keys():
+                    trigger = channeldict["trigger"].get("returnvalue", None)
+                    if type(trigger) != list:
+                        triggerlist = [trigger]
+                    else:
+                        triggerlist = trigger
 
-                        returnvalue = data[trigger]
-                        # execute function
-                        exec_class = channeldict["result"]["class"]
-                        exec_func = channeldict["result"]["function"]
-                        args = channeldict["result"]["args"]
-                        #self.logger(f"full args: {args}")
-                        for key, val in args.items():
-                            args[key] = data[val]
-                        sleep(2)
-                        t = getattr(exec_class, exec_func)(**args)
-                        self.logger(t)
+                    argdict = {}
+                    for trigger in triggerlist:
+                        if trigger in data.keys() or trigger == None:
+                            # set flag
+                            self.trigfound = True
+
+                            # execute function
+                            exec_class = channeldict["result"]["class"]
+                            exec_func = channeldict["result"]["function"]
+                            args = channeldict["result"].get("args", None)
+                            if trigger == None:
+                                argdict = data
+                            else:
+                                if args:
+                                    for key, val in args.items():
+                                        argdict[key] = data[val]
+                                else:
+                                    argdict[trigger] = data[trigger]
+                    if self.trigfound:
+                        t = getattr(exec_class, exec_func)(**argdict)
+                        self.trigfound = False
             if self.listenstop:
                 self.logger("Stopped listening for published messages.", "debug", "yellow")
                 break
-        
+
     def getclass(self, classname):
         if classname in self.classobjdict:
             return self.classobjdict[classname]
