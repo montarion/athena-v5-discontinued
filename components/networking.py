@@ -101,7 +101,9 @@ class Networking:
                 returnmsg = json.dumps({"category":"admin", "type":"signinresponse", "data":{"id":id}})
 
                 await websocket.send(returnmsg)
+        # maybe only do this bit if there's a flag set in membase, for security
         self.watcher.publish(self, msg)
+
     def messagebuilder(self, category, msgtype, data={}, metadata={}, target="all"):
         msg = json.dumps({"category":category, "type":msgtype, "data":data, "metadata":metadata})
         if target == "all":
