@@ -16,6 +16,7 @@ class Website:
         #self.timing = {"unit": "minutes", "count":2}
         self.networking = Networking
         self.watcher = Watcher
+        self.db = Database
 
         self.logger = Logger("Website").logger
 
@@ -27,14 +28,13 @@ class Website:
         staticfolder = os.path.join(self.basefolder, "static")
         tmpfolder = os.path.join(self.basefolder, "templates")
         self.app = Flask(__name__, static_folder=staticfolder, template_folder=tmpfolder)
-        self.sockets = Sockets(self.app)
+        self.socket = Sockets(self.app)
 
         self.logger("website is running")
 
         @self.app.route("/")
         def hello():
             return render_template("index.html")
-
 
         server = pywsgi.WSGIServer(('0.0.0.0', 8080), self.app, handler_class=WebSocketHandler)
         server.serve_forever()

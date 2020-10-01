@@ -106,11 +106,14 @@ class Networking:
         if category == "weather":
             if type == "current":
                 self.logger("got request for weather")
-                curdict = self.db.query("curdict", "weather")
+                curdict = self.db.query("currentweather", "weather")
+                
                 if curdict["status"] == 200:
-                    await websocket.send(json.dumps(curdict["resource"]))
+                    data = curdict["resource"]
+                    msg = self.messagebuilder(category, type, data)
+                    await websocket.send(msg)
                 else:
-                    returnmsg = {"status":200, "message":"couldn't find current weather"}
+                    returnmsg = {"status":404, "message":"couldn't find current weather"}
                     await websocket.send(json.dumps(returnmsg))
 
 
@@ -118,20 +121,23 @@ class Networking:
         # maybe only do this bit if there's a flag set in membase, for security
         self.watcher.publish(self, msg)
 
-    def messagebuilder(self, category, msgtype, data={}, metadata={}, target="all"):
+    def messagebuilder(self, category, msgtype, data={}, metadata={}, target=None):
         msg = json.dumps({"category":category, "type":msgtype, "data":data, "metadata":metadata})
-        if target == "all":
-            idlist = list(self.db.membase.keys())
-        if type(target) == list:
-            idlist = target
-        elif type(target) == int:
-            idlist = [target]
+        if not target:
+            return msg
+        else:
+            if target == "all":
+                idlist = list(self.db.membase.keys())
+            if type(target) == list:
+                idlist = target
+            elif type(target) == int:
+                idlist = [target]
 
-        result = {"success": [], "failure": []}
+            result = {"success": [], "failure": []}
 
-        for id in idlist:
-            result = asyncio.get_event_loop().run_until_complete(self.send(msg, idlist))
-        return result
+            for id in idlist:
+                result = asyncio.get_event_loop().run_until_complete(self.send(msg, idlist))
+            return result
 
     def startserving(self):
         self.logger("starting")
