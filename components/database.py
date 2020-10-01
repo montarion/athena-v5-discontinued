@@ -4,10 +4,12 @@ import json, traceback
 
 class Database:
     membase = {} # this is specific to the calling module
-    def __init__(self):
+    def __init__(self, Networking=None):
         self.logger = Logger("DATABASE").logger
         self.db = ('data/db.json')
         self.table = "main"
+        self.nw = Networking
+        self.membase = Database.membase
 
     def write(self, key, value, table=None):
         """Usage: Database().write("foo", {"foo":"bar"}, "test")"""
@@ -22,7 +24,6 @@ class Database:
             self.table = table
 
         #t = self.gettable(table)
-
 
         with open(self.db) as f:
             # get data
@@ -114,4 +115,6 @@ class Database:
         #self.logger(res, "debug", "yellow")
         return res
 
-    
+    def getfromuser(self, asker, questionlist):
+        ui_interfaces = self.membase["ui-interfaces"]
+        self.logger(ui_interfaces, "alert", "green")
