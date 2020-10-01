@@ -31,6 +31,7 @@ class Core:
         
 
         # import them
+        
         for file in filelist:
             mod = importlib.import_module(f"modules.{file.split('.')[0]}")
 
@@ -63,10 +64,12 @@ class Core:
 
         # check dependencies
         removelist = []
-        tiereddepdict = {"user":{}, "preload":{}, "postuser":{}}
-        #self.logger(list(self.moduledict.keys()), "debug", "yellow")
-        for item in self.moduledict:
-            
+        tiereddepdict = {"user":{}, "preload":{}, "postuser":{}, "standalone":{}}
+        self.logger(list(self.moduledict), "debug", "yellow")
+        for item in self.moduledict:    
+            self.logger(item, "debug", "blue")
+            self.classobjdict[item] = self.moduledict[item]["classobj"]
+            self.logger(self.classobjdict, "debug", "blue")
             tier = self.moduledict[item]["attr"]["dependencies"]["tier"]
             # TODO: use tier to seperate dependency loading into tiers, to mitigate intermodule dependency errors
             self.logger(self.moduledict[item])
@@ -80,10 +83,11 @@ class Core:
                 removelist.append(item)
         for t in removelist:
             del self.moduledict[t]
+            del self.classobjdict[t]
 
         # create simple name:class object, to pass to watcher
-        for classname in self.moduledict:
-            self.classobjdict[classname] = classobj
+        #for classname in self.moduledict:
+        #    self.classobjdict[classname] = classobj
         self.logger(f"Running modules: {list(self.moduledict)}")
         self.logger("Discovery finished.")
 
@@ -101,9 +105,14 @@ class Core:
         # test
         self.discovermodules()
 
-        
+
         # start intermodule comms service
-        self.logger(self.classobjdict)
+        # add core modules
+        self.classobjdict["Networking"] = Networking
+        self.classobjdict["Database"] = self.db
+
+        self.logger(self.classobjdict, "alert", "blue")
+        exit()
         Watcher = watcher(self.classobjdict)
         
         # discover modules
@@ -111,6 +120,7 @@ class Core:
         
         # start tasks
 
+        uiinterfaces = []
         for module in self.moduledict:
             #timing = self.moduledict[module]["attr"]["timing"]
             #dependencies = self.moduledict[module]["attr"]["dependencies"]
@@ -119,14 +129,16 @@ class Core:
             self.logger(dependencies, "debug", "blue")
             capabilities = self.moduledict[module]["attr"]["capabilities"]
             classobj = self.moduledict[module]["classobj"]
-            self.logger(f"FIX TASK THREADING", "alert", "red")
             if "blocking" in capabilities:
                 # use threaded
                 self.tasker.createthreadedtask(getattr(classobj(**dependencies), "startrun"))
+            if "ui" in capabilities:
+                uiinterfaces.append(module)
             else:
                 timing = self.moduledict[module]["attr"]["timing"]
                 self.tasker.createtask(getattr(classobj(**dependencies), "startrun"), timing["count"], timing["unit"])
 
+        self.db.write("ui-interfaces", uiinterfaces, "system")
         self.tasker.runfirst()
         while True:
             self.tasker.runall()
