@@ -24,7 +24,8 @@ class Networking:
                     await websocket.close()
                     #self.logger("closed.")
                     data = ""
-                    
+                else:
+                    self.logger(str(e2))
 
     def createid(self): 
         table = self.database.gettable("users") 
@@ -100,7 +101,7 @@ class Networking:
                 returnmsg = json.dumps({"category":"admin", "type":"signinresponse", "data":{"id":id}})
 
                 await websocket.send(returnmsg)
-        self.watcher.publish(self, {msg})
+        self.watcher.publish(self, msg)
     def messagebuilder(self, category, msgtype, data={}, metadata={}, target="all"):
         msg = json.dumps({"category":category, "type":msgtype, "data":data, "metadata":metadata})
         if target == "all":
