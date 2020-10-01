@@ -59,7 +59,12 @@ class Database:
                 fulldata = json.loads(f.read())
 
             data = fulldata[table]
-            result = data[query]
+            if type(query) == list:
+                for q in query:
+                    data = data[q]
+                result = data
+            else:
+                result = data[query]
             msg = {"status": 200, "resource":result}
             return msg
         except KeyError as e:
