@@ -131,14 +131,16 @@ class Core:
             classobj = self.moduledict[module]["classobj"]
             if "blocking" in capabilities:
                 # use threaded
-                self.tasker.createthreadedtask(getattr(classobj(**dependencies), "startrun"))
+                finalclassobj = classobj(**dependencies)
+                self.tasker.createthreadedtask(getattr(finalclassobj, "startrun"))
             if "ui" in capabilities:
                 uiinterfaces.append(module)
             else:
                 timing = self.moduledict[module]["attr"]["timing"]
-                self.tasker.createtask(getattr(classobj(**dependencies), "startrun"), timing["count"], timing["unit"])
+                finalclassobj = classobj(**dependencies)
+                self.tasker.createtask(getattr(finalclassobj, "startrun"), timing["count"], timing["unit"])
 
-        self.db.write("ui-interfaces", uiinterfaces, "system")
+        self.db.membase["ui-interfaces"] = uiinterfaces
         self.tasker.runfirst()
         while True:
             self.tasker.runall()
