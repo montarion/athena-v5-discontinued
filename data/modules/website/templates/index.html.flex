@@ -1,0 +1,37 @@
+ <!DOCTYPE html>
+<html>
+<head>
+    <title>Athena V4</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.0/js/all.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static',filename='css/styles.css') }}">
+    <script src="{{ url_for('static',filename='scripts/main.js') }}"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@1,300;1,700&display=swap" rel="stylesheet"> 
+</head>
+<body>
+    <div class="sidebar">stuff</div>
+    <div class="maincontent">
+        <div class="flexhalf" id="left">
+            <div class="text card" id="toptext"><span>text1: Biden wins<br>lorem <br> US election</span></div>
+            <div class="image card" id="bottomimage">
+                <div class="image-image">
+                </div>
+                <div class="image-info">
+                    <div class="image">
+                        icon placeholder        
+                    </div>
+                    <div class="text">
+                        information
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="flexhalf" id="right">
+            <div class="image card" id="topimage">
+                <div class="image-image"></div>
+            </div>
+            <div class="text card" id="bottomtext">text2<br>subtext</div>
+        </div>
+    </div>        
+</body>
+</html> 
