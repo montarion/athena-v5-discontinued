@@ -1,6 +1,6 @@
 # core file that always runs. starts networking and module discovery
 import threading, os, importlib, sys
-from components.database import Database
+from components.database import Database as database
 from components.networking import Networking as nw
 from components.tasks import Tasks
 from components.logger import Logger
@@ -40,7 +40,7 @@ class Core:
             
             # lets you access whatever is inside the class
             classobj = getattr(mod, name)
-            #print(classobj)
+            print(classobj)
             # list
             attrlist = dir(classobj())
             #print(f"attrlist: {attrlist}")
@@ -93,9 +93,10 @@ class Core:
 
 
     def standard(self):
-        global Networking, Watcher
+        global Networking, Watcher, Database
         # init database
-        self.db = Database()
+        self.db = database()
+        Database = self.db
 
         # start networking
         Networking = nw(self.db)
@@ -112,7 +113,6 @@ class Core:
         self.classobjdict["Database"] = self.db
 
         self.logger(self.classobjdict, "alert", "blue")
-        exit()
         Watcher = watcher(self.classobjdict)
         
         # discover modules
@@ -126,7 +126,7 @@ class Core:
             #dependencies = self.moduledict[module]["attr"]["dependencies"]
             #dependencies = {str(x):getattr(self.thismod, str(x))() for x in self.moduledict[module]["attr"]["dependencies"]}
             dependencies = {str(x):getattr(self.thismod, str(x)) for x in self.moduledict[module]["attr"]["dependencies"]["dependencies"]}
-            self.logger(dependencies, "debug", "blue")
+            self.logger(f"Dependencies: {dependencies}", "debug", "blue")
             capabilities = self.moduledict[module]["attr"]["capabilities"]
             classobj = self.moduledict[module]["classobj"]
             if "blocking" in capabilities:
