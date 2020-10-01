@@ -21,6 +21,9 @@
 #bottomtext{ 
     grid-area: bottomtext;
     margin: 0px 20px 20px 0;
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
 }
 
 #topimage{
@@ -116,4 +119,23 @@ img{
     padding:0;
     margin:0;
     border-radius: 10px;
+}
+
+
+/*  weather    */
+.text-image{
+    height: 100%;
+    flex-grow: 1;
+}
+.text-text{
+    height: 100%;
+    width: 100%;   
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-grow: 4;
+}
+
+.bold{
+    font-weight: bold;
 }
