@@ -40,7 +40,6 @@ class Core:
             
             # lets you access whatever is inside the class
             classobj = getattr(mod, name)
-            print(classobj)
             # list
             attrlist = dir(classobj())
             #print(f"attrlist: {attrlist}")
@@ -65,21 +64,21 @@ class Core:
         # check dependencies
         removelist = []
         tiereddepdict = {"user":{}, "preload":{}, "postuser":{}, "standalone":{}}
-        self.logger(list(self.moduledict), "debug", "yellow")
+        #self.logger(list(self.moduledict), "debug", "yellow")
         for item in self.moduledict:    
-            self.logger(item, "debug", "blue")
+            #self.logger(item, "debug", "blue")
             self.classobjdict[item] = self.moduledict[item]["classobj"]
-            self.logger(self.classobjdict, "debug", "blue")
+            #self.logger(self.classobjdict, "debug", "blue")
             tier = self.moduledict[item]["attr"]["dependencies"]["tier"]
             # TODO: use tier to seperate dependency loading into tiers, to mitigate intermodule dependency errors
-            self.logger(self.moduledict[item])
+            #self.logger(self.moduledict[item])
             dependencies = self.moduledict[item]["attr"]["dependencies"]["dependencies"]
             capabilities = self.moduledict[item]["attr"]["capabilities"]
-            self.logger(f"DEPENDENCIES: {dependencies}")
+            #self.logger(f"DEPENDENCIES: {dependencies}")
             coremodules = ["Networking", "Database", "Watcher"]
             failedlist = [x for x in dependencies if x not in coremodules and x not in list(self.moduledict.keys())]
             if len(failedlist) > 0:
-                self.logger(f"couldn't meet dependencies for {item}")
+                self.logger(f"couldn't meet dependencies for {item}", "info", "red")
                 removelist.append(item)
         for t in removelist:
             del self.moduledict[t]
@@ -112,7 +111,7 @@ class Core:
         self.classobjdict["Networking"] = Networking
         self.classobjdict["Database"] = self.db
 
-        self.logger(self.classobjdict, "alert", "blue")
+        #self.logger(self.classobjdict, "alert", "blue")
         Watcher = watcher(self.classobjdict)
 
         # add watcher to membase
@@ -129,7 +128,7 @@ class Core:
         uiinterfaces = {}
         for module in self.moduledict:
             dependencies = {str(x):getattr(self.thismod, str(x)) for x in self.moduledict[module]["attr"]["dependencies"]["dependencies"]}
-            self.logger(f"Dependencies: {dependencies}", "debug", "blue")
+            #self.logger(f"Dependencies: {dependencies}", "debug", "blue")
             capabilities = self.moduledict[module]["attr"]["capabilities"]
             classobj = self.moduledict[module]["classobj"]
             if "blocking" in capabilities:
