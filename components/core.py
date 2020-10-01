@@ -114,17 +114,20 @@ class Core:
 
         self.logger(self.classobjdict, "alert", "blue")
         Watcher = watcher(self.classobjdict)
-        
+
+        # add watcher to membase
+        self.classobjdict["Watcher"] = Watcher
+
+        # save it
+        self.db.membase["classes"] = self.classobjdict
+
         # discover modules
         #self.discovermodules()
         
         # start tasks
 
-        uiinterfaces = []
+        uiinterfaces = {}
         for module in self.moduledict:
-            #timing = self.moduledict[module]["attr"]["timing"]
-            #dependencies = self.moduledict[module]["attr"]["dependencies"]
-            #dependencies = {str(x):getattr(self.thismod, str(x))() for x in self.moduledict[module]["attr"]["dependencies"]}
             dependencies = {str(x):getattr(self.thismod, str(x)) for x in self.moduledict[module]["attr"]["dependencies"]["dependencies"]}
             self.logger(f"Dependencies: {dependencies}", "debug", "blue")
             capabilities = self.moduledict[module]["attr"]["capabilities"]
@@ -134,7 +137,7 @@ class Core:
                 finalclassobj = classobj(**dependencies)
                 self.tasker.createthreadedtask(getattr(finalclassobj, "startrun"))
             if "ui" in capabilities:
-                uiinterfaces.append(module)
+                uiinterfaces[module] = finalclassobj
             else:
                 timing = self.moduledict[module]["attr"]["timing"]
                 finalclassobj = classobj(**dependencies)
