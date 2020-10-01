@@ -10,6 +10,7 @@ class Database:
         self.table = "main"
         self.nw = Networking
         self.membase = Database.membase
+        self.userresponse = {}
 
     def write(self, key, value, table=None):
         """Usage: Database().write("foo", {"foo":"bar"}, "test")"""
@@ -37,14 +38,6 @@ class Database:
 
         data = json.loads(json.dumps(fulldata[table]))
 
-        #self.logger(f"value exists: {value in data.values()}", "debug", "blue")
-        #self.logger(f"data: {data}", "debug", "blue")
-        #self.logger(f"old key is of type: {type(list(data.keys())[0])}", "debug", "blue")
-        #self.logger(f"new key is of type: {type(key)}", "debug", "blue")
-        #self.logger(f"key in list of old keys: {key in data.keys()}", "debug", "blue")
-        #if key not in data.keys():
-            #self.logger("writing data..")
-            # change data
         data[key] = value
 
             # save in proper form
@@ -118,3 +111,51 @@ class Database:
     def getfromuser(self, asker, questionlist):
         ui_interfaces = self.membase["ui-interfaces"]
         self.logger(ui_interfaces, "alert", "green")
+        # choose the best ui
+        # hardcoded to website for now
+        bestui = "Website"
+        if bestui == "Website":
+            bestuiuser = "website"
+            # write down somewhere that website requires networking
+            realquestionlist = {}
+            self.logger(questionlist)
+            for q in questionlist:
+                realquestionlist[q["type"]] = q["question"]
+
+            for q in realquestionlist:
+                self.logger(realquestionlist[q])
+                finq = {"asker":asker, "question":realquestionlist[q]}
+                msg = {"category":"question", "type":"text", "data":finq,"metadata": {"copy":{"guid":"testguid"}}}
+
+
+                self.logger(self.membase["classes"], "debug", "blue")
+                # get network class
+                networking = self.membase["classes"]["Networking"]
+                # get watcher class
+                watcher = self.membase["classes"]["Watcher"]
+
+                # send to website
+
+                ui_id = networking.findtarget(bestuiuser)
+                self.logger(ui_id)
+
+                # register yourself with watcher
+                regdata = {"trigger":{"class":"Networking"}, "result":{"class": self, "function":"responsewait"}}
+                watcher.register(regdata)
+
+                # send message
+                networking.regsend(msg, ui_id)
+
+                # wait for your answer to come in
+                while True:
+                    if self.userresponse.get("category", None) == "answer":
+                        if self.userresponse["metadata"].get("guid") == "testguid":
+
+                            break
+                del self.userresponse["metadata"]["guid"]
+                return self.userresponse
+
+
+    def responsewait(self, **args):
+        self.userresponse = args
+        self.logger(f"response arguments! - {args}")
