@@ -108,10 +108,10 @@ class Networking:
                 self.logger("got request for weather")
                 curdict = self.db.query("curdict", "weather")
                 if curdict["status"] == 200:
-                    await websocket.send(curdict["resource"])
+                    await websocket.send(json.dumps(curdict["resource"]))
                 else:
                     returnmsg = {"status":200, "message":"couldn't find current weather"}
-                    await websocket.send(returnmsg)
+                    await websocket.send(json.dumps(returnmsg))
 
 
 
