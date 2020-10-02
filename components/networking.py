@@ -16,7 +16,8 @@ class Networking:
                 msg = json.loads(data)
                 await self.msghandler(websocket, msg)
             except ConnectionResetError as e1:
-                pass
+                self.logger("Reset error", "alert", "red")
+                sleep(2)
             except Exception as e2:
                 # use re for error parsing
                 if "1001" in str(e2):
