@@ -79,14 +79,18 @@ class Database:
             callerclass, callerfunc = self.caller_name()
             self.logger(f"Query for \"{query}\" in table: {table} requested by: {callerclass, callerfunc}", "debug", "yellow")
             questionlist = [{"type": "text", "question": f"{query}"}]
-            answer = self.getfromuser(questionlist)
-            realanswer = answer["data"]["answer"]
-            self.write(query, realanswer, self.table)
-            self.logger(f"written answer to database.")
-            res = {"status": 201, "resource":realanswer}
 
-            # implement timeout function
-            #res = {"status": 404, "resource": f"Query: \"{query}\" not found"}
+            try:
+                answer = self.getfromuser(questionlist)
+                realanswer = answer["data"]["answer"]
+                self.write(query, realanswer, self.table)
+                self.logger(f"written answer to database.")
+
+                res = {"status": 201, "resource":realanswer}
+            except Exception as e3:
+                self.logger(f"Error when asking user. {str(e3)}", "alert", "red")
+                # TODO: implement timeout function
+                res = {"status": 404, "resource": f"Query: \"{query}\" not found"}
             return res
 
     def remove(self, query, table=None):
