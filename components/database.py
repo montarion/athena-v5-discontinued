@@ -1,6 +1,6 @@
 from ast import literal_eval as eval
 from components.logger import Logger
-import json, traceback
+import json, traceback, inspect, shortuuid
 
 class Database:
     membase = {} # this is specific to the calling module
@@ -25,10 +25,11 @@ class Database:
             self.table = table
 
         #t = self.gettable(table)
-
-        with open(self.db) as f:
-            # get data
-            fulldata = json.loads(f.read())
+        fulldata = ""
+        while len(fulldata) == 0:
+            with open(self.db) as f:
+                # get data
+                fulldata = json.loads(f.read())
 
 
         tables = fulldata.keys()
@@ -51,12 +52,18 @@ class Database:
 
     def query(self, query, table=None):
         """Usage: Database().query("name", "test")"""
+        # called by(test)
+        #callerclass, callerfunc = self.caller_name() 
+        #self.logger(f"Query requested by: {callerclass, callerfunc}", "debug", "yellow")
+        
         if table:
             self.table = table
 
         try:
-            with open(self.db) as f:
-                fulldata = json.loads(f.read())
+            fulldata = ""
+            while len(fulldata) == 0:
+                with open(self.db) as f:
+                    fulldata = json.loads(f.read())
 
             data = fulldata[table]
             if type(query) == list:
@@ -68,7 +75,18 @@ class Database:
             msg = {"status": 200, "resource":result}
             return msg
         except KeyError as e:
-            res = {"status": 404, "resource": f"Query: \"{query}\" not found"}
+            # ask question
+            callerclass, callerfunc = self.caller_name()
+            self.logger(f"Query for \"{query}\" in table: {table} requested by: {callerclass, callerfunc}", "debug", "yellow")
+            questionlist = [{"type": "text", "question": f"{query}"}]
+            answer = self.getfromuser(questionlist)
+            realanswer = answer["data"]["answer"]
+            self.write(query, realanswer, self.table)
+            self.logger(f"written answer to database.")
+            res = {"status": 201, "resource":realanswer}
+
+            # implement timeout function
+            #res = {"status": 404, "resource": f"Query: \"{query}\" not found"}
             return res
 
     def remove(self, query, table=None):
@@ -77,10 +95,11 @@ class Database:
         if table:
             self.table = self.db.table(table)
 
-        with open(self.db) as f:
-            # get data
-            fulldata = json.loads(f.read())
-
+        fulldata = ""
+        while len(fulldata) == 0:
+            with open(self.db) as f:
+                # get data
+                fulldata = json.loads(f.read())
 
         tables = fulldata.keys()
         if table not in tables:
@@ -102,9 +121,11 @@ class Database:
     def gettable(self, table):
         """Usage: Database().gettable("table")"""
 
-        with open(self.db) as f:
-            fulldata = json.loads(f.read())
-
+        fulldata = ""
+        while len(fulldata) == 0:
+            with open(self.db) as f:
+                # get data
+                fulldata = json.loads(f.read())
         try:
             table = fulldata[table]
             res = {"status": 200, "resource": table}
@@ -113,7 +134,9 @@ class Database:
         #self.logger(res, "debug", "yellow")
         return res
 
-    def getfromuser(self, asker, questionlist):
+    def getfromuser(self, questionlist):
+        """gets answer from user for given question. can only do one question at a time for now"""
+        asker = self.caller_name(3)
         ui_interfaces = self.membase["ui-interfaces"]
         self.logger(ui_interfaces, "alert", "green")
         # choose the best ui
@@ -130,7 +153,9 @@ class Database:
             for q in realquestionlist:
                 self.logger(realquestionlist[q])
                 finq = {"asker":asker, "question":realquestionlist[q]}
-                msg = {"category":"question", "type":"text", "data":finq,"metadata": {"copy":{"guid":"testguid"}}}
+                #create guid
+                guid = shortuuid.uuid()[:8]
+                msg = {"category":"question", "type":"text", "data":finq,"metadata": {"copy":{"guid":guid}}}
 
 
                 self.logger(self.membase["classes"], "debug", "blue")
@@ -154,13 +179,38 @@ class Database:
                 # wait for your answer to come in
                 while True:
                     if self.userresponse.get("category", None) == "answer":
-                        if self.userresponse["metadata"].get("guid") == "testguid":
+                        if self.userresponse["metadata"].get("guid") == guid:
 
                             break
                 del self.userresponse["metadata"]["guid"]
+
                 return self.userresponse
 
 
     def responsewait(self, **args):
         self.userresponse = args
         self.logger(f"response arguments! - {args}")
+
+    def caller_name(self, skip=2):
+        """from https://gist.github.com/techtonik/2151727 """
+        stack = inspect.stack()
+        start = 0 + skip
+        if len(stack) < start + 1:
+          return ''
+        parentframe = stack[start][0]    
+
+        name = []
+        module = inspect.getmodule(parentframe)
+        if module:
+            name.append(module.__name__)
+        # detect classname
+        if 'self' in parentframe.f_locals:
+            name.append(parentframe.f_locals['self'].__class__.__name__)
+        codename = parentframe.f_code.co_name
+        if codename != '<module>':  # top level usually
+            name.append( codename ) # function or a method
+        del parentframe
+        for i in name:
+            if "." in i:
+                name.remove(i)
+        return name
