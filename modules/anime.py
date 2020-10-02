@@ -68,7 +68,7 @@ class Anime:
             else:
                 number += 1
                 x += 1
-        Database().write("animedict", self.maindict, "anime")
+        Database().write("maindict", self.maindict, "anime")
 
 
 
