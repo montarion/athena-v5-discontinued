@@ -29,12 +29,13 @@ class Weather:
         self.logger(f"GOT USER RESULTS! - {t}", "info", "green")
 
     def getcurrentweather(self):
-        title = "new york"
+        title = self.db.query("city", "personalia")["resource"]
         apikey = self.db.query(["weather", "apikey"], "credentials")
-        if apikey["status"] == 200:
+        if str(apikey["status"])[0] == "2":
             apikey = apikey["resource"]
         else:
-            self.logger("couldn't find apikey, ask user")
+            self.logger("Couldn't find apikey, or user didn't respond. Exiting.")
+            exit()
         lat,lon = "40.677748", "-73.906903"
 
         baseurl = f"https://api.openweathermap.org/data/2.5/onecall?lat={lat}&lon={lon}&appid={apikey}&units=metric"
