@@ -13,7 +13,7 @@ class Anime:
         # other init stuff happens in startrun
 
     def getshows(self, number = 1):
-        base = f"https://nyaa.si/?page=rss&q={self.publishchoice}+%2B+[1080p]&c=1_2&f=2"
+        base = f"https://nyaa.si/?page=rss&q={self.publishchoice}+%2B+[1080p]&c=1_2&f=0"
         feed = feedparser.parse(base)
         entries = feed.entries
         sessiondict = {}
@@ -52,14 +52,16 @@ class Anime:
                     #targetlist = settings().checkavailability("computing")["resource"]
                     #if len(targetlist) == 0:
                     #Event().anime("aired")
-                    idlist = self.networking.findtarget("greytest")
-                    self.logger(f"REMOVE HARDCODED TARGET", "alert", "yellow")
+
+                    # send the message - Just publish this and let someone else take care of it. example: "{type: "new show"} in metadata, for whoever is listening
+                    #idlist = self.networking.findtarget("greytest")
+                    #self.logger(f"REMOVE HARDCODED TARGET", "alert", "yellow")
                     category = "anime"
                     type = "latest"
                     artdict = {"cover": imagelink, "banner": bannerlink}
                     data = {"title":show, "lastep": episode, "art":artdict, "aired_at":ct}
                     metadata = {"status": 200}
-                    res = self.networking.messagebuilder(category, type, data, metadata, "all")
+                    #res = self.networking.messagebuilder(category, type, data, metadata, "all")
                     Database().write("lastshow", sessiondict, "anime")
 
                     # publish the data
@@ -74,7 +76,7 @@ class Anime:
 
 
     def cleantitle(self, title):
-        pattern = "\[HorribleSubs\] (.*) - ([0-9]*) \[1080p\].mkv"
+        pattern = f"\[{self.publishchoice}\] (.*) - ([0-9]*).* \[1080p\].*.mkv"
         res = re.search(pattern, title)
         show = res.group(1)
         episode = res.group(2)
@@ -118,16 +120,24 @@ class Anime:
         os.system(command)
 
     def findshows(self):
+        from selenium import webdriver
+        from selenium.webdriver.chrome.options import Options
         from bs4 import BeautifulSoup
 
-        url = "https://horriblesubs.info/current-season/"
-        html = requests.get(url)
-        soup = BeautifulSoup(html.text, "html.parser")
-        preshows = soup.find_all(class_="ind-show")
+        url = "https://www.erai-raws.info/schedule/"
+        chrome_opts = Options()
+        chrome_opts.add_argument("--headless")
+        chrome_opts.add_argument("--disable-gpu")
+        chrome_opts.add_argument("--disable-extensions")
+        driver = webdriver.Chrome(options=chrome_opts)
+        driver.get(url)
+        sleep(6)
+        soup = BeautifulSoup(driver.page_source, "html.parser")
+        preshows = soup.find_all("h6", "hhhh5")
         showlist = []
         chosenlist = []
         for show in preshows:
-            showlist.append(show.find("a")["title"])
+            showlist.append(''.join(show.find("a").contents).strip())
 
         for i, show in enumerate(showlist):
             print("Show number {} is: {}".format(i + 1, show))
@@ -136,19 +146,19 @@ class Anime:
                 chosenlist.append(show)
         result = self.dbobj.write("watchlist", chosenlist, "anime")
 
-        return result
+        return chosenlist
 
     def startrun(self, number = 1):
         self.logger = Logger("Anime").logger
         self.dbobj = Database()
-        self.publishchoice = "HorribleSubs"
+        self.publishchoice = "Erai-raws"
         prelist = self.dbobj.query("watchlist", "anime")
         if prelist["status"] == 200:
             self.watchlist = prelist["resource"]
         else:
             self.watchlist = self.findshows()
 
-        self.publishchoice = "HorribleSubs"
+        #self.publishchoice = "HorribleSubs"
         predict = self.dbobj.query("maindict", "anime")
         if predict["status"] == 200:
             self.maindict = predict["resource"]
