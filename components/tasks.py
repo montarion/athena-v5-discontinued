@@ -23,7 +23,9 @@ class Tasks:
         return task
 
     def createthreadedtask(self, functarget, argdict={}):
-       threading.Thread(target=functarget, kwargs=argdict).start()
+        t = threading.Thread(target=functarget, kwargs=argdict)
+        t.start()
+        return t
 
     def removetask(self, tag):
         schedule.clear(tag)
