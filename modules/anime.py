@@ -76,13 +76,15 @@ class Anime:
 
 
     def cleantitle(self, title):
-        pattern = f"\[{self.publishchoice}\] (.*) - ([0-9]*).* \[1080p\].*.mkv"
-        res = re.search(pattern, title)
-        show = res.group(1)
-        episode = res.group(2)
-        newtitle = f"{show} - {episode}.mkv"
-        return newtitle, show, episode
-
+        pattern = f"\[{self.publishchoice}\] (.*) - ([0-9]*).* .*\[1080p\].*.mkv"
+        try:
+            res = re.search(pattern, title)
+            show = res.group(1)
+            episode = res.group(2)
+            newtitle = f"{show} - {episode}.mkv"
+            return newtitle, show, episode
+        except:
+            self.logger(f"Failure to parse title: {title}", "alert", "red")
     def getinfo(self, name):
         query = "query($title: String){Media (search: $title, type: ANIME){episodes, bannerImage, coverImage{extraLarge}}}" # this is graphQL, not REST
         variables = {'title': name}
