@@ -141,6 +141,11 @@ class Database:
     def getfromuser(self, questionlist):
         """gets answer from user for given question. can only do one question at a time for now"""
         asker = self.caller_name(3)
+        # stop execution
+        # TODO: stop scheduled execution .. you don't have to, nothing will advance while waiting though
+        taskclass = self.membase["classes"]["Tasks"]
+        #taskclass.pause(asker[0])
+
         ui_interfaces = self.membase["ui-interfaces"]
         self.logger(ui_interfaces, "alert", "green")
         # choose the best ui
@@ -184,10 +189,12 @@ class Database:
                 while True:
                     if self.userresponse.get("category", None) == "answer":
                         if self.userresponse["metadata"].get("guid") == guid:
-
+                            # TODO: unsubscribe from networking
                             break
                 del self.userresponse["metadata"]["guid"]
 
+                # start schedule again
+                taskclass.resume(asker[0])
                 return self.userresponse
 
 
