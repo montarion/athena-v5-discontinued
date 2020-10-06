@@ -157,15 +157,12 @@ class Core:
                 taskobj = getattr(finalclassobj, "startrun") # running the actual function
                 task = self.tasker.createtask(taskobj, timing["count"], timing["unit"], tag=module)
                 taskdict[module] = {}
+                taskdict[module]["task"] = task
                 taskdict[module]["taskobj"] = taskobj
                 taskdict[module]["timing"] = timing
             self.logger(f"Taskdict: {taskdict}", "debug", "blue")
 
         self.db.membase["ui-interfaces"] = uiinterfaces
         self.db.membase["taskdict"] = taskdict
-        self.tasker.runfirst()
-        while True:
-            self.tasker.runall()
-            sleep(2)
-        pass
+        self.tasker.run()
 

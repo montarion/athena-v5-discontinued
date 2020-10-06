@@ -1,4 +1,9 @@
-import json, schedule, threading
+import json, threading
+
+#from apscheduler.schedulers.asyncio import AsyncScheduler as schedule
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.interval import IntervalTrigger as trigger
+
 from time import sleep
 from components.logger import Logger
 #from components.database import Database
@@ -8,16 +13,12 @@ class Tasks:
     def __init__(self, Database):
         self.logger = Logger("Tasks").logger
         self.db = Database
+        self.schedule = BackgroundScheduler()
 
-    def createtask(self, functarget, time, unit, argdict=None, tag="user task"):
-        self.logger(f"Argdict: {argdict}", "debug", "red")
-        if not argdict:
-            #functarget = threading.Thread(target=prefunctarget)
-            task = getattr(schedule.every(time), unit).do(functarget).tag(tag)
-        else:
-        # TODO: fix this shit
-            #functarget = threading.Thread(target=prefunctarget, kwargs=argdict)
-            task = getattr(schedule.every(time), unit).do(functarget, **argdict).tag(tag)
+    def createtask(self, functarget, count, unit, tag="user task"):
+        #task = getattr(schedule.every(count), unit).do(functarget).tag(tag)
+        kwargs = {unit: count}
+        task = self.schedule.add_job(functarget, trigger(**kwargs))
         return task
 
     def createthreadedtask(self, functarget, argdict={}):
@@ -27,30 +28,24 @@ class Tasks:
 
     def pause(self, target):
         # check if target in membase. if so, stop execution
-        if "target" in self.db.membase["taskdict"]:
+        taskdict = self.db.membase["taskdict"]
+        self.logger(taskdict)
+        self.logger(target)
+        if target in taskdict:
+            job = taskdict[target]["task"]
+            job.pause()
             self.logger(f"Paused: {target}")
-            self.removetask(target)
 
     def resume(self, target):
-        if "target" in self.db.membase["taskdict"]:
-            type = self.db.membase["taskdict"][target].get("type", "basic")
-            if type != "basic":
-                return False # make that an actual error
-            if "timing" in self.db.membase["taskdict"][target]:
-                timing = self.db.membase["taskdict"][target]["timing"]
-            else:
-                timing = {"unit": "minutes", "count": 5}
-            taskobj = self.db.membase["taskdict"][target]["taskobj"]
-            time = timing["unit"]
-            unit = timing["minutes"]
-            getattr(schedule.every(time), unit).do(taskobj).tag(target).run()
+        taskdict = self.db.membase["taskdict"]
+        if target in taskdict:
+            job = taskdict[target]["task"]
+            job.pause()
             self.logger(f"Resumed: {target}")
 
     def removetask(self, tag):
-        schedule.clear(tag)
+        self.schedule.clear(tag)
 
-    def runall(self):
-        schedule.run_pending()
+    def run(self):
+        self.schedule.start()
 
-    def runfirst(self):
-        schedule.run_all()

@@ -144,7 +144,8 @@ class Database:
         # stop execution
         # TODO: stop scheduled execution .. you don't have to, nothing will advance while waiting though
         taskclass = self.membase["classes"]["Tasks"]
-        #taskclass.pause(asker[0])
+        self.logger(taskclass)
+        taskclass.pause(asker[0])
 
         ui_interfaces = self.membase["ui-interfaces"]
         self.logger(ui_interfaces, "alert", "green")
