@@ -21,11 +21,12 @@ class Weather:
         # make request for info through whatever is registered as main(/current?) ui
         # wait for the answer without blocking the main thread
         # but pause the execution of the current program(through db query?)
-        asker = self.__class__.__name__
+        #asker = self.__class__.__name__
         questionlist = [{"type": "text", "question": "Where do you live?"}]
+        
         self.logger("RELOAD PAGE NOW", "alert", "red")
         time.sleep(5)
-        t = self.db.getfromuser(asker, questionlist)
+        t = self.db.getfromuser(questionlist)
         self.logger(f"GOT USER RESULTS! - {t}", "info", "green")
 
     def getcurrentweather(self):
@@ -80,6 +81,6 @@ class Weather:
         # init stuff..
         self.logger = Logger("Weather").logger
         self.logger("running weather")
-        #self.websetuptest()
+        self.websetuptest()
         return self.getcurrentweather()
         
