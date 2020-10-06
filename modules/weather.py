@@ -6,7 +6,6 @@ class Weather:
         self.dependencies = {"tier":"standalone", "dependencies":["Database", "Watcher"]}
         self.capabilities = ["timed", "async"]
         self.timing = {"unit": "minutes", "count":10}
-        print(Database)
         self.db = Database
         self.watcher = Watcher
         # do not add init stuff
@@ -36,7 +35,7 @@ class Weather:
             apikey = apikey["resource"]
         else:
             self.logger("Couldn't find apikey, or user didn't respond. Exiting.")
-            exit()
+            exit() # TODO: only kill this job, and provide feedback through the ui
         lat,lon = "40.677748", "-73.906903"
 
         baseurl = f"https://api.openweathermap.org/data/2.5/onecall?lat={lat}&lon={lon}&appid={apikey}&units=metric"
@@ -81,6 +80,6 @@ class Weather:
         # init stuff..
         self.logger = Logger("Weather").logger
         self.logger("running weather")
-        self.websetuptest()
+        #self.websetuptest()
         return self.getcurrentweather()
         
