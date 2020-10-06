@@ -13,7 +13,7 @@ Watcher = ""
 class Core:
     def __init__(self):
         self.moduledict = {}
-        self.tasker = Tasks()
+        #self.tasker = Tasks()
         self.logger = Logger("Core").logger
         self.classobjdict = {}
         self.thismod = sys.modules[__name__] # to share networking
@@ -102,6 +102,10 @@ class Core:
         t1 = threading.Thread(target=Networking.startserving)
         t1.start()
 
+        # init tasker
+        Tasker = Tasks(self.db)
+
+        self.tasker = Tasker
         # test
         self.discovermodules()
 
@@ -110,6 +114,7 @@ class Core:
         # add core modules
         self.classobjdict["Networking"] = Networking
         self.classobjdict["Database"] = self.db
+        self.classobjdict["Tasks"] = self.tasker
 
         #self.logger(self.classobjdict, "alert", "blue")
         Watcher = watcher(self.classobjdict)
@@ -126,25 +131,41 @@ class Core:
         # start tasks
 
         uiinterfaces = {}
+        taskdict = {}
+        self.logger(self.moduledict)
         for module in self.moduledict:
+            name = module
+            self.logger(name, "debug", "yellow")
             dependencies = {str(x):getattr(self.thismod, str(x)) for x in self.moduledict[module]["attr"]["dependencies"]["dependencies"]}
             #self.logger(f"Dependencies: {dependencies}", "debug", "blue")
             capabilities = self.moduledict[module]["attr"]["capabilities"]
             classobj = self.moduledict[module]["classobj"]
+            task = ""
             if "blocking" in capabilities:
                 # use threaded
                 finalclassobj = classobj(**dependencies)
-                self.tasker.createthreadedtask(getattr(finalclassobj, "startrun"))
+                taskobj = getattr(finalclassobj, "startrun") # running the actual function
+                task = self.tasker.createthreadedtask(taskobj)
+                taskdict[module] = {}
+                taskdict[module]["taskobj"] = taskobj
+                taskdict[module]["type"] = "threaded"
             if "ui" in capabilities:
                 uiinterfaces[module] = finalclassobj
             else:
                 timing = self.moduledict[module]["attr"]["timing"]
                 finalclassobj = classobj(**dependencies)
-                self.tasker.createtask(getattr(finalclassobj, "startrun"), timing["count"], timing["unit"])
+                taskobj = getattr(finalclassobj, "startrun") # running the actual function
+                task = self.tasker.createtask(taskobj, timing["count"], timing["unit"], tag=module)
+                taskdict[module] = {}
+                taskdict[module]["taskobj"] = taskobj
+                taskdict[module]["timing"] = timing
+            self.logger(f"Taskdict: {taskdict}", "debug", "blue")
 
         self.db.membase["ui-interfaces"] = uiinterfaces
+        self.db.membase["taskdict"] = taskdict
         self.tasker.runfirst()
         while True:
             self.tasker.runall()
             sleep(2)
         pass
+
