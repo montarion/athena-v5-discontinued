@@ -84,9 +84,6 @@ class Core:
             del self.moduledict[t]
             del self.classobjdict[t]
 
-        # create simple name:class object, to pass to watcher
-        #for classname in self.moduledict:
-        #    self.classobjdict[classname] = classobj
         self.logger(f"Running modules: {list(self.moduledict)}")
         self.logger("Discovery finished.")
 
@@ -132,10 +129,10 @@ class Core:
 
         uiinterfaces = {}
         taskdict = {}
-        self.logger(self.moduledict)
+        #self.logger(self.moduledict)
         for module in self.moduledict:
             name = module
-            self.logger(name, "debug", "yellow")
+            #self.logger(name, "debug", "yellow")
             dependencies = {str(x):getattr(self.thismod, str(x)) for x in self.moduledict[module]["attr"]["dependencies"]["dependencies"]}
             #self.logger(f"Dependencies: {dependencies}", "debug", "blue")
             capabilities = self.moduledict[module]["attr"]["capabilities"]
@@ -160,7 +157,7 @@ class Core:
                 taskdict[module]["task"] = task
                 taskdict[module]["taskobj"] = taskobj
                 taskdict[module]["timing"] = timing
-            self.logger(f"Taskdict: {taskdict}", "debug", "blue")
+            #self.logger(f"Taskdict: {taskdict}", "debug", "blue")
 
         self.db.membase["ui-interfaces"] = uiinterfaces
         self.db.membase["taskdict"] = taskdict
