@@ -51,7 +51,9 @@ class Networking:
 
     def regsend(self, message, targetidlist):
         loop = asyncio.new_event_loop()
-        loop.run_until_complete(self.send(message, targetidlist))
+        self.logger("Sending through regsend")
+        #self.loop.run_until_complete(self.send(message, targetidlist))
+        asyncio.ensure_future(self.send(message, targetidlist), loop=loop)
 
     async def send(self, message, targetidlist):
         returnmsg = {"success": [], "failure": []}
@@ -103,6 +105,9 @@ class Networking:
                 returnmsg = json.dumps({"category":"admin", "type":"signinresponse", "data":{"id":id}})
 
                 await websocket.send(returnmsg)
+            if type == "question":
+                questionlist = [{"type": "text", "question": "how are you doing?"}]
+                self.db.getfromuser(questionlist)
 
         if category == "weather":
             if type == "current":
@@ -117,7 +122,20 @@ class Networking:
                     returnmsg = {"status":404, "message":"couldn't find current weather"}
                     await websocket.send(json.dumps(returnmsg))
 
-
+        if category == "web":
+            if type == "template":
+                """ get template data for presets """
+                self.logger(msg)
+                preset = msg["preset"] # e.g. weather
+                filename = msg["filename"] # e.g. weather.html
+                tmppath = os.path.abspath("data/modules/{preset}/")
+                if filename.split(".")[-1] in ["js", "html", "css"]:
+                    finpath = safe_join(tmppath, filename)
+                    with open(finpath) as f:
+                        result = f.read()
+                    data = {"data": result}
+                    returnmsg = self.messagebuilder(category, msgtype, data)
+                    await websocket.send(json.dumps(returnmsg))
 
         # maybe only do this bit if there's a flag set in membase, for security
         self.watcher.publish(self, msg)
