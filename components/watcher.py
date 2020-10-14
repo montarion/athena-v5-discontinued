@@ -79,7 +79,7 @@ class Watcher:
             return self
 
 
-    def execute(self, classname, funcname=None):
+    def execute(self, classname, funcname=None, args={}):
         # skip
         if type(classname) == str:
             classobj = self.getclass(classname)
@@ -88,8 +88,10 @@ class Watcher:
         else:
             classobj = classname
 
-        # do things with class object
-        pass
+        if funcname:
+            # do things with class object
+            getattr(classname, funcname(**args))
+        
 
     def register(self, regdata):
         """
