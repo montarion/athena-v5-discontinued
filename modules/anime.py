@@ -10,6 +10,7 @@ class Anime:
         self.timing = {"unit": "minutes", "count":2}
         self.networking = Networking
         self.watcher = Watcher
+        self.datapath = f"data/modules/{self.__class__.__name__.lower()}"
         # other init stuff happens in startrun
 
     def getshows(self, number = 1):
@@ -25,11 +26,14 @@ class Anime:
                 self.logger(f"Tried index {x} and failed.")
                 break
 
-            title, show, episode = self.cleantitle(entry["title"])
+            try:
+                title, show, episode = self.cleantitle(entry["title"])
+            except:
+                break
             link = entry["link"]
             if show in self.watchlist:
                 self.logger(f"current: {show}")
-                sessiondict["command"] = "anime"
+                #sessiondict["command"] = "anime" #not sure what this is for
                 sessiondict["title"] = show
                 sessiondict["episode"] = episode
                 if show not in self.maindict:
@@ -58,7 +62,7 @@ class Anime:
                     #self.logger(f"REMOVE HARDCODED TARGET", "alert", "yellow")
                     category = "anime"
                     type = "latest"
-                    artdict = {"cover": imagelink, "banner": bannerlink}
+                    artdict = sessiondict["art"]
                     data = {"title":show, "lastep": episode, "art":artdict, "aired_at":ct}
                     metadata = {"status": 200}
                     #res = self.networking.messagebuilder(category, type, data, metadata, "all")
@@ -85,6 +89,7 @@ class Anime:
             return newtitle, show, episode
         except:
             self.logger(f"Failure to parse title: {title}", "alert", "red")
+            exit(1)
     def getinfo(self, name):
         query = "query($title: String){Media (search: $title, type: ANIME){episodes, bannerImage, coverImage{extraLarge}}}" # this is graphQL, not REST
         variables = {'title': name}
@@ -131,6 +136,7 @@ class Anime:
         chrome_opts.add_argument("--headless")
         chrome_opts.add_argument("--disable-gpu")
         chrome_opts.add_argument("--disable-extensions")
+        chrome_opts.add_argument("--log-level=OFF")
         driver = webdriver.Chrome(options=chrome_opts)
         driver.get(url)
         sleep(6)
@@ -155,17 +161,16 @@ class Anime:
         self.dbobj = Database()
         self.publishchoice = "Erai-raws"
         prelist = self.dbobj.query("watchlist", "anime")
-        if prelist["status"] == 200:
+        if prelist["status"][:2] == "20":
             self.watchlist = prelist["resource"]
         else:
             self.watchlist = self.findshows()
 
         #self.publishchoice = "HorribleSubs"
         predict = self.dbobj.query("maindict", "anime")
-        if predict["status"] == 200:
+        if predict["status"][:2] == "20":
             self.maindict = predict["resource"]
         else:
             self.maindict = {}
 
-        
         self.getshows(number)
