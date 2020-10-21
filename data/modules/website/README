@@ -1,1 +1,17 @@
 make it so that new modules create a popup if they need setup stuff like credentials or something
+
+ui messages are in principle constructed like the following:
+
+{"template": "weather", "temp": "twentyone", "city":"new york", "extra":"light rain"}
+
+where ``template`` is the name of the html and css. if ommitted, the site will look for keys "title", and "subtitle".
+if those aren't found, an error is shown
+
+if there is a template, it'll be loaded, removed from the list, and the remaining keys will be treated as id names with the values filling the contents of those elements.
+
+if there is no ``template`` key, the site will look for keys "title", and "subtitle".
+if those aren't found, an error is shown.
+if the template is found, and there is an icon key, an icon will be shown on the left hand side
+if the template is found, and there is an image key, the message gets upgraded to the image container, and will use image as background
+if template is found, and there is both an image and an icon key, they're matched.
+

@@ -1,0 +1,25 @@
+/*  weather    */
+.text-image{
+    height: 100%;
+    flex-grow: 1;
+    position: relative;
+    z-index: 2;
+}
+
+#iconurl{
+    display: flex;
+    height: 100%;
+    align-items: center;
+}
+.text-text{
+    height: 100%;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-grow: 4;
+    position: relative;
+    z-index: 1;
+}
+
+

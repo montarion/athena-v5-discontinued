@@ -7,7 +7,12 @@ $('document').ready(function(){
         console.log("hey")
         console.log($(this).width())
     });
-    addimage();
+/*    $('.main-carousel').flickity({
+      // options
+      cellAlign: 'left',
+      contain: true
+    });
+    addimage();*/
     //addimage("#bottomimage", "static/files/images/test.jpg")
 });
 

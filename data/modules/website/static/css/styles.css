@@ -8,7 +8,7 @@
 }
 
 .sidebar{
-    width: 200px;
+    width: 0px;
     height: 100%;
     position: fixed;
 }
@@ -16,6 +16,10 @@
 #toptext{
     grid-area: toptext;
     margin: 20px;
+    position: relative;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
 }
 
 #bottomtext{ 
@@ -30,27 +34,48 @@
 #topimage{
     grid-area: topimage;
     margin: 20px 20px 20px 0;
+    position: relative;
 }
 
 #bottomimage{
     grid-area: bottomimage;
     margin: 0px 20px 20px 20px;
+    position: relative;
 }
 
-
+/* mobile */
 .maincontent{
-    margin-left: 200px;
+    margin-left: 0px;
     height: 100vh;
     background-color:#2B3648;
     display: grid;
     grid-template-areas:
-        "toptext topimage"
-        "bottomimage topimage"
-        "bottomimage bottomtext";
+        "toptext"
+        "topimage"
+        "bottomimage"
+        "bottomtext";
     
     width: fit-content;
-    grid-template-columns: repeat(2, minmax(20%, auto));
-    grid-template-rows: repeat(2, minmax(10%, auto));
+    grid-template-columns: repeat(1, 100%);
+    grid-template-rows: repeat(4, minmax(10%, auto));
+}
+
+@media only screen and (min-width: 768px) {
+    /* desktop */
+    .maincontent{
+        margin-left: 0px;
+        height: 100vh;
+        background-color:#2B3648;
+        display: grid;
+        grid-template-areas:
+            "toptext topimage"
+            "bottomimage topimage"
+            "bottomimage bottomtext";
+
+        width: fit-content;
+        grid-template-columns: repeat(2, minmax(40%, auto));
+        grid-template-rows: repeat(2, minmax(10%, auto));
+    }
 }
 
 .text{
@@ -106,40 +131,34 @@
     font-size: large;
 }
 
-
-/*
-.image{
-    display:grid;
-    grid-template-columns: auto;
-    grid-template-rows:auto;
-
-    
+.text-image > div{
+    display: flex;
+    align-items: center;
+    height: 100%;
 }
-*/
+
+
+/* slider */
+.single-item > div {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  
+}
+
+.swiper-pagination {
+    background: transparent;
+}
 img{
     padding:0;
     margin:0;
     border-radius: 10px;
 }
 
+span{
+    background:inherit;
+}
 
-/*  weather    */
-.text-image{
-    height: 100%;
-    flex-grow: 1;
-    position: absolute;
-    z-index: 2;
-}
-.text-text{
-    height: 100%;
-    width: 100%;   
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-grow: 4;
-    position: absolute;
-    z-index: 1;
-}
 
 .bold{
     font-weight: bold;
