@@ -100,9 +100,8 @@ class Core:
         t1.start()
 
         # init tasker
-        Tasker = Tasks(self.db)
+        self.tasker = Tasks(self.db)
 
-        self.tasker = Tasker
         # test
         self.discovermodules()
 
@@ -126,13 +125,11 @@ class Core:
         #self.discovermodules()
         
         # start tasks
-
         uiinterfaces = {}
         taskdict = {}
-        #self.logger(self.moduledict)
         for module in self.moduledict:
             name = module
-            #self.logger(name, "debug", "yellow")
+            self.logger(name, "debug", "yellow")
             dependencies = {str(x):getattr(self.thismod, str(x)) for x in self.moduledict[module]["attr"]["dependencies"]["dependencies"]}
             #self.logger(f"Dependencies: {dependencies}", "debug", "blue")
             capabilities = self.moduledict[module]["attr"]["capabilities"]
@@ -142,7 +139,7 @@ class Core:
                 # use threaded
                 finalclassobj = classobj(**dependencies)
                 taskobj = getattr(finalclassobj, "startrun") # running the actual function
-                task = self.tasker.createthreadedtask(taskobj)
+                task = self.tasker.createthreadedtask(taskobj) #changed from createthreadedtask
                 taskdict[module] = {}
                 taskdict[module]["taskobj"] = taskobj
                 taskdict[module]["type"] = "threaded"
@@ -162,4 +159,3 @@ class Core:
         self.db.membase["ui-interfaces"] = uiinterfaces
         self.db.membase["taskdict"] = taskdict
         self.tasker.run()
-

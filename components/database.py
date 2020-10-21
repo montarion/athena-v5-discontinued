@@ -1,7 +1,7 @@
 from ast import literal_eval as eval
 from components.logger import Logger
 import json, traceback, inspect, shortuuid
-
+from time import sleep
 class Database:
     membase = {} # this is specific to the calling module
     def __init__(self, Networking=None):
@@ -72,7 +72,15 @@ class Database:
                 result = data
             else:
                 result = data[query]
-            msg = {"status": 200, "resource":result}
+
+            if type(result) == str:
+                try:
+                    result = eval(result)
+                except:
+                        pass
+            #self.logger(f"result: {result} - {type(result)}", "debug", "red")
+
+            msg = {"status": "200", "resource":result}
             return msg
         except KeyError as e:
             # ask question
@@ -80,17 +88,23 @@ class Database:
             self.logger(f"Query for \"{query}\" in table: {table} requested by: {callerclass, callerfunc}", "debug", "yellow")
             questionlist = [{"type": "text", "question": f"{query}"}]
 
-            try:
+            try: 
                 answer = self.getfromuser(questionlist)
-                realanswer = answer["data"]["answer"]
+                realanswer = answer["data"]["answer"] 
                 self.write(query, realanswer, self.table)
-                self.logger(f"written answer to database.")
-
-                res = {"status": 201, "resource":realanswer}
+                self.logger(f"written answer to database.") 
+                if type(realanswer) == str:
+                    try:
+                        realanswer= eval(realanswer)
+                    except:
+                        pass
+                #self.logger(f"result: {realanswer} - {type(realanswer)}")
+                res = {"status": "201", "resource":realanswer}
             except Exception as e3:
                 self.logger(f"Error when asking user. {str(e3)}", "alert", "red")
+                traceback.print_exc()
                 # TODO: implement timeout function
-                res = {"status": 404, "resource": f"Query: \"{query}\" not found"}
+                res = {"status": "404", "resource": f"Query: \"{query}\" not found"}
             return res
 
     def remove(self, query, table=None):
@@ -161,7 +175,6 @@ class Database:
                 realquestionlist[q["type"]] = q["question"]
 
             for q in realquestionlist:
-                self.logger(realquestionlist[q])
                 finq = {"asker":asker, "question":realquestionlist[q]}
                 #create guid
                 guid = shortuuid.uuid()[:8]
@@ -171,6 +184,7 @@ class Database:
                 self.logger(self.membase["classes"], "debug", "blue")
                 # get network class
                 networking = self.membase["classes"]["Networking"]
+                self.logger(networking)
                 # get watcher class
                 watcher = self.membase["classes"]["Watcher"]
 
@@ -188,10 +202,11 @@ class Database:
 
                 # wait for your answer to come in
                 while True:
-                    if self.userresponse.get("category", None) == "answer":
+                    if self.userresponse.get("category", None) == "answer": # response looks like: {"category":"answer", "type":"text", "data":{"answer":"('52.090', '5.232')"}, "metadata":{"guid": "QonSPv29"}};
                         if self.userresponse["metadata"].get("guid") == guid:
                             # TODO: unsubscribe from networking
                             break
+                    sleep(0.5)
                 del self.userresponse["metadata"]["guid"]
 
                 # start schedule again

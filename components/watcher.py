@@ -76,21 +76,25 @@ class Watcher:
         if classname in self.classobjdict:
             return self.classobjdict[classname]
         else:
+            self.logger("class not found")
             return self
 
 
     def execute(self, classname, funcname=None, args={}):
-        # skip
+        self.logger("inside execute function")
+        database = self.getclass("Database")
         if type(classname) == str:
             classobj = self.getclass(classname)
+            self.logger(classobj)
             if not inspect.isclass(classobj):
                 return "Class not found"
         else:
             classobj = classname
-
+        self.logger(classobj)
         if funcname:
             # do things with class object
-            getattr(classname, funcname(**args))
+            self.logger(args, "debug", "yellow")
+            threading.Thread(target=getattr(classobj(database), funcname), kwargs=args).start()
         
 
     def register(self, regdata):

@@ -1,34 +1,37 @@
-import websockets, asyncio, json
+import websockets, asyncio, json, os, tracemalloc, shortuuid
 from components.logger import Logger
 from time import sleep
 class Networking:
 
     def __init__(self, database=None):
         self.db = database
-        self.loop = asyncio.new_event_loop()
         self.logger = Logger("Networking").logger
         self.watcher_loaded = False
 
     async def runserver(self, websocket, path):
+        self.logger("got new client!", "alert", "yellow")
         while True:
             try:
                 data = await websocket.recv()
                 msg = json.loads(data)
                 await self.msghandler(websocket, msg)
+                await asyncio.sleep(0.1)
             except ConnectionResetError as e1:
                 self.logger("Reset error", "alert", "red")
-                sleep(2)
+                await asyncio.sleep(2)
+                raise ConnectionResetError
+                break
             except Exception as e2:
                 # use re for error parsing
-                if "1001" in str(e2):
+                if "1001" in str(e2) or "1005" in str(e2):
                     #self.logger(f"Error: {str(e2)}", "alert", "red")
                     await websocket.close()
                     self.logger("closed.")
-                    data = ""
+                    break
                 else:
                     self.logger(str(e2))
-                    sleep(3)
-
+                    await websocket.close()
+                    break
     def createid(self): 
         table = self.db.gettable("users") 
         if table["status"] == 200:
@@ -50,22 +53,44 @@ class Networking:
         return idlist
 
     def regsend(self, message, targetidlist):
-        loop = asyncio.new_event_loop()
+        loop = self.db.membase["eventloop"]
         self.logger("Sending through regsend")
-        #self.loop.run_until_complete(self.send(message, targetidlist))
-        asyncio.ensure_future(self.send(message, targetidlist), loop=loop)
+        uuid = shortuuid.uuid()[:4]
+        self.senddict[uuid] = {}
+        self.senddict[uuid]["message"] = message
+        self.senddict[uuid]["targetidlist"] = targetidlist
+        self.logger(self.senddict)
+        return True
 
     async def send(self, message, targetidlist):
-        returnmsg = {"success": [], "failure": []}
-        for targetid in targetidlist:
-            #socket = self.db.query(targetid, "networking")["socket"]
-            socket = self.db.membase[targetid]["socket"]
-            if type(message) == dict:
-                message = json.dumps(message)
-            await socket.send(message)
-            returnmsg["success"].append(targetid)
+        loop = self.db.membase["eventloop"]
+        self.logger("Sending through regsend")
+        uuid = shortuuid.uuid()[:4]
+        self.senddict[uuid] = {}
+        self.senddict[uuid]["message"] = message
+        self.senddict[uuid]["targetidlist"] = targetidlist
 
-        return returnmsg
+    async def realsend(self):
+        self.senddict = {}
+        self.logger(self.senddict)
+        while True:
+            #self.logger("checking...")
+            #self.logger(self.senddict)
+            for k in self.senddict.keys():
+                self.logger("sending...")
+                msg = self.senddict[k]["message"]
+                targetidlist = self.senddict[k]["targetidlist"]
+                returnmsg = {"success": [], "failure": []}
+                for targetid in targetidlist:
+                    socket = self.db.membase[targetid]["socket"]
+                    if type(msg) == dict:
+                        message = json.dumps(msg)
+                    await socket.send(message)
+                returnmsg["success"].append(targetid)
+            self.senddict = {}
+            await asyncio.sleep(0.2)
+
+        #return returnmsg
 
     async def msghandler(self, websocket, msg):
         if not self.watcher_loaded:
@@ -105,6 +130,16 @@ class Networking:
                 returnmsg = json.dumps({"category":"admin", "type":"signinresponse", "data":{"id":id}})
 
                 await websocket.send(returnmsg)
+
+                # weather
+                curdict = self.db.query("currentweather", "weather")
+
+                if curdict["status"][:2] == "20":
+                    data = curdict["resource"]
+
+                    msg = self.messagebuilder("weather", "current", data)
+                    await websocket.send(msg)
+
             if type == "question":
                 questionlist = [{"type": "text", "question": "how are you doing?"}]
                 self.db.getfromuser(questionlist)
@@ -112,33 +147,61 @@ class Networking:
         if category == "weather":
             if type == "current":
                 self.logger("got request for weather")
+                # run func
+                self.logger("trying")
+                self.watcher.execute("Weather", "getcurrentweather")
+                self.logger("done")
                 curdict = self.db.query("currentweather", "weather")
                 
-                if curdict["status"] == 200:
+                if curdict["status"][:2] == "20":
                     data = curdict["resource"]
                     msg = self.messagebuilder(category, type, data)
                     await websocket.send(msg)
                 else:
                     returnmsg = {"status":404, "message":"couldn't find current weather"}
                     await websocket.send(json.dumps(returnmsg))
+    
+        if category == "anime":
+            if type == "lastshow":
+                # anime
+                curdict = self.db.query("lastshow", "anime")
+                if curdict["status"][:2] == "20":
+                    data = curdict["resource"]
+
+                    msg = self.messagebuilder("anime", "lastshow", data)
+                    await websocket.send(msg)
 
         if category == "web":
             if type == "template":
                 """ get template data for presets """
+                self.logger("template request")
                 self.logger(msg)
-                preset = msg["preset"] # e.g. weather
-                filename = msg["filename"] # e.g. weather.html
-                tmppath = os.path.abspath("data/modules/{preset}/")
-                if filename.split(".")[-1] in ["js", "html", "css"]:
-                    finpath = safe_join(tmppath, filename)
+                data = msg["data"]
+                preset = data["preset"] # e.g. weather
+                filename = data["filename"] # e.g. weather.html
+                metadata = msg["metadata"]
+                if "copy" in metadata:
+                    self.logger(metadata["copy"])
+                    newmeta = metadata["copy"]
+                    metadata = newmeta
+
+                tmppath = os.path.abspath(f"data/modules/{preset}/templates/")
+                extension = filename.split(".")[-1]
+                self.logger(extension, "info", "blue")
+                if extension in ["js", "html", "json"]:
+                    finpath = os.path.join(tmppath, filename)
                     with open(finpath) as f:
                         result = f.read()
+                    if extension == "json":
+                        result = json.loads(result)
                     data = {"data": result}
-                    returnmsg = self.messagebuilder(category, msgtype, data)
-                    await websocket.send(json.dumps(returnmsg))
+                    returnmsg = self.messagebuilder(category, type, data, metadata)
+                    self.logger(f"Returning: {returnmsg}")
+                    await websocket.send(returnmsg)
 
         # maybe only do this bit if there's a flag set in membase, for security
         self.watcher.publish(self, msg)
+        await asyncio.sleep(0.1)
 
     def messagebuilder(self, category, msgtype, data={}, metadata={}, target=None):
         msg = json.dumps({"category":category, "type":msgtype, "data":data, "metadata":metadata})
@@ -155,14 +218,27 @@ class Networking:
             result = {"success": [], "failure": []}
 
             for id in idlist:
-                result = asyncio.get_event_loop().run_until_complete(self.send(msg, idlist))
+                result = asyncio.get_running_loop().run_until_complete(self.send(msg, idlist))
             return result
+
+    async def run_straglers(self):
+        while True: 
+            #pending = asyncio.all_tasks()
+            #await asyncio.create_task(asyncio.gather(*pending))
+            await asyncio.sleep(1)
 
     def startserving(self):
         self.logger("starting")
+        tracemalloc.start()
+        self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
-        serveserver = websockets.server.serve(self.runserver, "0.0.0.0", 8000, loop=self.loop)
-        #asyncio.set_event_loop(self.loop)
-        self.loop.run_until_complete(serveserver)
+        self.db.membase["eventloop"] = self.loop
+        serveserver = websockets.server.serve(self.runserver, "0.0.0.0", 8000)
+        
+        self.loop.create_task(self.run_straglers())
+        #self.loop.run_until_complete(serveserver)
+        asyncio.ensure_future(serveserver)
+        self.loop.create_task(self.realsend())
         self.logger("waiting...")
         self.loop.run_forever()
+        #TODO: FIX - THE WHILE LOOP INSIDE DATABASE().GETFROMUSER BLOCKS EVERYTHING. FIX. 
