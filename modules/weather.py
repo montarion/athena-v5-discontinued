@@ -6,17 +6,15 @@ class Weather:
         self.dependencies = {"tier":"standalone", "dependencies":["Database", "Watcher"]}
         self.capabilities = ["timed", "async"]
         self.timing = {"unit": "minutes", "count":10}
+        self.datapath = f"data/modules/{self.__class__.__name__.lower()}"
         self.db = Database
         self.watcher = Watcher
+        self.logger = Logger("Weather").logger
+
         # do not add init stuff
 
-    def doStuff(self):
-        self.logger("Doing stuff...")
-        # get openweatherAPI creds
-    
 
-
-    def websetuptest(self):
+    def websetuptest(self): # here as a test
         # make request for info through whatever is registered as main(/current?) ui
         # wait for the answer without blocking the main thread
         # but pause the execution of the current program(through db query?)
@@ -29,15 +27,21 @@ class Weather:
         self.logger(f"GOT USER RESULTS! - {t}", "info", "green")
 
     def getcurrentweather(self):
+        if not self.watcher:
+            self.watcher = self.db.membase["classes"]["Watcher"]
         title = self.db.query("city", "personalia")["resource"]
         apikey = self.db.query(["weather", "apikey"], "credentials")
-        if str(apikey["status"])[0] == "2":
+        if str(apikey["status"])[:2] == "20":
             apikey = apikey["resource"]
         else:
             self.logger("Couldn't find apikey, or user didn't respond. Exiting.")
             exit() # TODO: only kill this job, and provide feedback through the ui
-        lat,lon = "40.677748", "-73.906903"
-
+        coords = self.db.query("coordinates", "personalia") #"40.677748", "-73.906903"
+        if coords["status"][:2] == "20": # check if success
+            lat,lon = coords["resource"]
+        else:
+            self.logger("Couldn't find coordinates, or user didn't respond. Exiting.")
+            exit() # TODO: only kill this job, and provide feedback through the ui
         baseurl = f"https://api.openweathermap.org/data/2.5/onecall?lat={lat}&lon={lon}&appid={apikey}&units=metric"
 
         #TODO try-catch this HTTP request
@@ -78,7 +82,6 @@ class Weather:
     def startrun(self):
         """this is what gets called by main"""
         # init stuff..
-        self.logger = Logger("Weather").logger
         self.logger("running weather")
         #self.websetuptest()
         return self.getcurrentweather()
