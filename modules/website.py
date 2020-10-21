@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, safe_join, send_from_directory
 from flask_sockets import Sockets
 
 from gevent import pywsgi
@@ -24,6 +24,9 @@ class Website:
 
         # other init stuff happens in startrun
 
+    def detecttemplates(self):
+        # detect other ui elements
+        pass
     def startrun(self):
         staticfolder = os.path.join(self.basefolder, "static")
         tmpfolder = os.path.join(self.basefolder, "templates")
@@ -36,5 +39,15 @@ class Website:
         def hello():
             return render_template("index.html")
 
+
+        @self.app.route("/templates/<path:location>/<path:filename>")
+        def template(location, filename):
+            tmppath = os.path.abspath(f"data/modules/{location}/templates/")
+            if filename.split(".")[-1] in ["css"]:
+                finpath = safe_join(tmppath, filename)
+                self.logger(tmppath)
+                return send_from_directory(tmppath, filename)
+            else:
+                return 404
         server = pywsgi.WSGIServer(('0.0.0.0', 8080), self.app, handler_class=WebSocketHandler)
         server.serve_forever()
