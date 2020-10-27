@@ -92,7 +92,6 @@ class Core:
         """ returns function result on completion of scheduled task"""
         retval = event.retval
         if retval:
-            self.logger(retval, "alert", "blue")
             id = event.job_id
             classname, funcname = self.tasker.getjobname(id)
             self.watcher.publish(classname, retval)
