@@ -84,8 +84,8 @@ class Networking:
                 for targetid in targetidlist:
                     socket = self.db.membase[targetid]["socket"]
                     if type(msg) == dict:
-                        message = json.dumps(msg)
-                    await socket.send(message)
+                        msg = json.dumps(msg)
+                    await socket.send(msg)
                 returnmsg["success"].append(targetid)
             self.senddict = {}
             await asyncio.sleep(0.2)
@@ -140,6 +140,14 @@ class Networking:
                     msg = self.messagebuilder("weather", "current", data)
                     await websocket.send(msg)
 
+                # anime
+                curdict = self.db.query("lastshow", "anime")
+                if curdict["status"][:2] == "20":
+                    data = curdict["resource"]
+
+                    msg = self.messagebuilder("anime", "lastshow", data)
+                    await websocket.send(msg)
+
             if type == "question":
                 questionlist = [{"type": "text", "question": "how are you doing?"}]
                 self.db.getfromuser(questionlist)
@@ -149,7 +157,7 @@ class Networking:
                 self.logger("got request for weather")
                 # run func
                 self.logger("trying")
-                self.watcher.execute("Weather", "getcurrentweather")
+                #self.watcher.execute("Weather", "getcurrentweather")
                 self.logger("done")
                 curdict = self.db.query("currentweather", "weather")
                 
@@ -178,7 +186,7 @@ class Networking:
                 self.logger(msg)
                 data = msg["data"]
                 preset = data["preset"] # e.g. weather
-                filename = data["filename"] # e.g. weather.html
+                files = data["filenames"] # e.g. weather.html
                 metadata = msg["metadata"]
                 if "copy" in metadata:
                     self.logger(metadata["copy"])
@@ -186,18 +194,21 @@ class Networking:
                     metadata = newmeta
 
                 tmppath = os.path.abspath(f"data/modules/{preset}/templates/")
-                extension = filename.split(".")[-1]
-                self.logger(extension, "info", "blue")
-                if extension in ["js", "html", "json"]:
-                    finpath = os.path.join(tmppath, filename)
-                    with open(finpath) as f:
-                        result = f.read()
-                    if extension == "json":
-                        result = json.loads(result)
-                    data = {"data": result}
-                    returnmsg = self.messagebuilder(category, type, data, metadata)
-                    self.logger(f"Returning: {returnmsg}")
-                    await websocket.send(returnmsg)
+                finres = {}
+                for filename in files:
+                    extension = filename.split(".")[-1]
+                    self.logger(extension, "info", "blue")
+                    if extension in ["js", "html", "json"]:
+                        finpath = os.path.join(tmppath, filename)
+                        with open(finpath) as f:
+                            result = f.read()
+                        if extension == "json":
+                            result = json.loads(result)
+                        finres[filename] = result
+                data = finres
+                returnmsg = self.messagebuilder(category, type, data, metadata)
+                self.logger(f"Returning: {returnmsg}")
+                await websocket.send(returnmsg)
 
         # maybe only do this bit if there's a flag set in membase, for security
         self.watcher.publish(self, msg)

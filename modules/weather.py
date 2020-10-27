@@ -69,10 +69,12 @@ class Weather:
             iconbase = "http://openweathermap.org/img/wn/"
             iconurl = iconbase + icon + "@2x.png"
             curdict = {"location": title, "time": dt, "temp":temp, "rain":rain, "sunrise":sunrise, "sunset":sunset, "clouds":clouds, "windspeed":windspeed, "iconurl":iconurl}
+            # uitest
+            curdict["background"] = "https://i.imgur.com/oOz9jCd.gif"
             # save it
             self.db.write("currentweather", curdict, "weather")
             # publish it
-            self.watcher.publish(self, curdict)
+            #self.watcher.publish(self, curdict)
             return {"status":200, "resource":curdict}
         except Exception as e:
             self.logger(e, "alert", "red")

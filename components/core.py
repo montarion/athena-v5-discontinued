@@ -88,6 +88,15 @@ class Core:
         self.logger("Discovery finished.")
 
 
+    def ontaskcomplete(self, event):
+        """ returns function result on completion of scheduled task"""
+        retval = event.retval
+        if retval:
+            self.logger(retval, "alert", "blue")
+            id = event.job_id
+            classname, funcname = self.tasker.getjobname(id)
+            self.watcher.publish(classname, retval)
+
     def standard(self):
         global Networking, Watcher, Database
         # init database
@@ -114,7 +123,7 @@ class Core:
 
         #self.logger(self.classobjdict, "alert", "blue")
         Watcher = watcher(self.classobjdict)
-
+        self.watcher = Watcher
         # add watcher to membase
         self.classobjdict["Watcher"] = Watcher
 
@@ -158,4 +167,5 @@ class Core:
 
         self.db.membase["ui-interfaces"] = uiinterfaces
         self.db.membase["taskdict"] = taskdict
+        self.tasker.addlistener(self.ontaskcomplete)
         self.tasker.run()

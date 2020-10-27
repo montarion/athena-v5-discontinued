@@ -4,6 +4,7 @@ import apscheduler
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger as trigger
+from apscheduler import events
 from time import sleep
 from components.logger import Logger
 from datetime import datetime
@@ -54,4 +55,20 @@ class Tasks:
 
     def getjobs(self):
         self.schedule.print_jobs()
-        
+        return self.schedule.get_jobs()
+
+    def getjobname(self, jobid=None):
+        tmpjoblist = self.schedule.get_jobs()
+        jobdict = {}
+        for job in tmpjoblist:
+            name = job.name
+            job = job.id
+            jobdict[job] = name
+
+        if jobid in jobdict:
+            name = jobdict[jobid]
+            classname, funcname = name.split(".")
+            return classname, funcname
+
+    def addlistener(self, function):
+        self.schedule.add_listener(function, events.EVENT_JOB_EXECUTED)

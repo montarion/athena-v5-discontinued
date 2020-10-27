@@ -7,10 +7,12 @@ class Anime:
     def __init__(self, Networking=None, Watcher=None):
         self.dependencies = {"tier": "user", "dependencies":["Networking", "Watcher"]}
         self.capabilities = ["timed"]
-        self.timing = {"unit": "minutes", "count":2}
+        self.timing = {"unit": "seconds", "count":20}
         self.networking = Networking
+        # geen basics
         self.watcher = Watcher
         self.datapath = f"data/modules/{self.__class__.__name__.lower()}"
+        self.retval = None
         # other init stuff happens in startrun
 
     def getshows(self, number = 1):
@@ -25,7 +27,6 @@ class Anime:
             except IndexError:
                 self.logger(f"Tried index {x} and failed.")
                 break
-
             try:
                 title, show, episode = self.cleantitle(entry["title"])
             except:
@@ -48,7 +49,10 @@ class Anime:
 
                 self.maindict[show]["lastep"] = episode
                 animedict = self.dbobj.gettable("anime")["resource"]
-                if animedict.get("lastshow", {"title":"show"})["title"] != show:
+                lastshow = self.dbobj.query(["lastshow", "title"], "anime")["resource"]
+                self.logger(lastshow, "alert", "yellow")
+                #if animedict.get("lastshow", {"title":"show"})["title"] != show:
+                if lastshow != show:
                     self.download(show, link)
                     ct = int(time.time())
                     self.maindict[show]["aired_at"] = ct
@@ -64,18 +68,18 @@ class Anime:
                     type = "latest"
                     artdict = sessiondict["art"]
                     data = {"title":show, "lastep": episode, "art":artdict, "aired_at":ct}
+                    self.retval = data
                     metadata = {"status": 200}
                     #res = self.networking.messagebuilder(category, type, data, metadata, "all")
                     Database().write("lastshow", sessiondict, "anime")
 
-                    # publish the data
-                    self.watcher.publish(self, data)
-                x += 1
-            else:
+
+                x += 1 else:
                 number += 1
                 x += 1
         Database().write("maindict", self.maindict, "anime")
-
+        if self.retval:
+            return self.retval
 
 
 
@@ -90,6 +94,7 @@ class Anime:
         except:
             self.logger(f"Failure to parse title: {title}", "alert", "red")
             exit(1)
+
     def getinfo(self, name):
         query = "query($title: String){Media (search: $title, type: ANIME){episodes, bannerImage, coverImage{extraLarge}}}" # this is graphQL, not REST
         variables = {'title': name}
@@ -173,4 +178,6 @@ class Anime:
         else:
             self.maindict = {}
 
-        self.getshows(number)
+        result = self.getshows(number)
+        if result:
+            return result

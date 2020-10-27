@@ -66,7 +66,7 @@ class Database:
                     fulldata = json.loads(f.read())
 
             data = fulldata[table]
-            if type(query) == list:
+            if type(query) == list: #e.g. ..query(["lastshow", "title"])
                 for q in query:
                     data = data[q]
                 result = data
