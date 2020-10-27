@@ -4,6 +4,7 @@
     height: 100%;
     position: relative;
     z-index: 2;
+    background:transparent;
 }
 
 #anime-block .image-fade{

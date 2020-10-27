@@ -1,9 +1,8 @@
 // pick between bottom text or toptext
 //hardcode for now
 
-
 presetstore = {} // stores ui data
-elementstore = {} // stores element data
+elementstore = {"lock":""} // stores element data
 
 function createurl(store, location, filename){
     //url = "{{ url_for(" + store + ", filename=" + filename + ") }}"
@@ -35,148 +34,102 @@ function loadImage(path, target) {
     return true;
 }
 imglist = ["icon", "iconurl", "image", "imageurl", "cover", "banner", "art"];
-function fillhtml(data, jsonmap){
+async function fillhtml(data, jsonmap, element){
+    
     console.warn("INSIDE FILLHTML")
-    console.log(data)
-    console.log({element})
-    for (x in jsonmap){
-        curarray = jsonmap[x];
-        console.log(curarray)
-        for (innercontainer in curarray){
-            containerelement = element + " > ." + innercontainer;
-            console.log(containerelement)
-            item = curarray[innercontainer];
-            console.log(item)
-            for (i in item){
-                finitem = item[i];
-                console.trace(finitem)
-                if (typeof finitem == "object"){
-                    // dictionary
-                    console.warn("dictionary")
-                    console.log({finitem})
-                    console.log({innercontainer})
-                    Object.keys(finitem).forEach(function (key){
-                        console.log(key)
-                        value = finitem[key];
-                        console.log(value)
-                        if(innercontainer == "-background"){
-
-                            if(!(key[0] == "-")){ //continue, something we need
-                                console.log({data})
-                                console.log("working on:", key)
-                                obj = data[key][value]
-                                console.log({obj})
-                                // got background info, now check for options
-                                if(Object.keys(finitem).includes("-options")){
-                                    // options object for background found
-                                    val = finitem["-options"]
-                                    if (val == "fade"){
-                                        fadeelement = "linear-gradient(0deg, rgba(0,0,0,1) 0%, rgba(3,4,4,0.19929978827468486) 100%)";
-                                        bgimgcss = 'url("' + obj + '")';
-                                        finbackground = fadeelement + ", " +bgimgcss;
-                                        console.log({finbackground})
-                                        $(element).css('background-image', finbackground);
-                                    } else{
-                                        finbackground = 'url("' + obj + '")';
-                                    }
+    console.debug(data)
+    console.debug(jsonmap)
+    console.debug({element})    
+    for (category in jsonmap){
+        catentries = jsonmap[category];
+        console.warn(catentries[0])
+        if (typeof catentries[0] == "object"){
+            // dictionary
+            console.warn("dictionary")
+            Object.values(catentries).forEach(function (dictobj){
+                Object.keys(dictobj).forEach(function(key){
+                    value = dictobj[key]
+                    if(category == "-background"){
+                        if(!(key[0] == "-")){ //continue, something we need
+                            console.log("working on:", key)
+                            if(value =="-ignore"){
+                                obj = data[key];
+                            } else {
+                                obj = data[key][value];
+                            }
+                            finbackground = 'url("' + obj + '")';
+                            // got background info, now check for options
+                            if(Object.keys(catentries).includes("-options")){
+                                // options object for background found
+                                val = catentries["-options"]
+                                if (val == "fade"){
+                                    fadeelement = "linear-gradient(0deg, rgba(0,0,0,1) 0%, rgba(3,4,4,0.19929978827468486) 100%)";
+                                    bgimgcss = 'url("' + obj + '")';
+                                    finbackground = fadeelement + ", " +bgimgcss;
                                     $(element).css('background-image', finbackground);
-                                    console.warn("added background to: ", element);
                                 }
                             }
+                            $(element).css('background-image', finbackground);
+                            updateslider(oldelement)
+                            console.debug("added background to: ", element);
                         }
-                        console.warn("done with background");
-                    })
-                    console.warn("done with dictionary");
-                }else{
-                    key = Object.keys(finitem).map(function(key){return key})
-                    newdata = data[key]
-                    console.log({newdata})
-                    value = Object.keys(finitem).map(function(key){return finitem[key]})
-                    console.log(key, value)
-                    /*
-                        if(innercontainer == "-background"){
-                            
-                            console.log("TEST")
-                            console.log(element)
-                            console.warn("changing background")
-                            
-                            $(element).css('background-image', 'url("' + obj + '")');
-                            // change background for element inside
-                            $(element + " > div").css("background", "transparent");
-                            //$(outputelement).load(obj);
-                            //loadImage(obj, element);
-
-                            //continue
-
-                        }
-                        if (imglist.includes(finitem)){
-                            // TODO: add option for background(if finitem == "background" or "bg"
-                            $(outputelement).attr("src", obj);
-                            //$(outputelement).load(obj);
-                            loadImage(obj, outputelement);
-                        } else {
-                            $(outputelement).text(obj);
-                        }
-                    }*/
-                    updateslider(oldelement);
-
-                    outputelement = containerelement + " > #" + finitem;
-                    obj = data[finitem];
-                    console.log(finitem)
-                    console.log(outputelement)
-                    console.log(obj)
-                    if (imglist.includes(finitem)){
-                        $(outputelement).attr("src", obj);
-                        //$(outputelement).load(obj);
-                        res = loadImage(obj, outputelement);
-                        while (!(res)){} // wait for image to load
-                        
-
-                    } else {
-                        $(outputelement).text(obj);
-                    }
+                    };
+                });
+            });
+            console.log("done with dictionary");
+        } else {
+            console.log("NOT A DICTIONARY")
+            catentries.forEach(function(key, index){
+                value = data[key]
+                updateslider(oldelement);
+                containerelement = element + " > ." + category;
+                outputelement = containerelement + " > #" + key;
+                obj = value;
+                console.log("ADDING STUFF")
+                console.log(key, value)
+                if (imglist.includes(key)){
+                    $(outputelement).attr("src", obj);
+                    res = loadImage(obj, outputelement);
+                    while (!(res)){} // wait for image to load
+                } else {
+                    $(outputelement).text(obj);
                 }
-            };
+            })
         };
-    };
-
-    // get html of element
-    html = $(element).html();
-    console.warn(element)
-    return html;
-}
-async function changetextbox(data, preset="message"){
-    console.log(preset)
-    console.log(data)
-    element = pickelement(data);
-    console.log(elementstore)
-    if (!(element in elementstore)){
-        elementstore[element] = [];
-        multi = false; // flag used for hint
-    } else {
-        console.log("found multiple, adding carousel")
-        multi = true; // flag used for hint
-        // save previous element
-        console.log($(element).children())
-        child = $(element).children()[0];
         
-        // multiple in element
-        console.log(element)
-        
-    } 
-    elementstore[element].push(preset)
-    if (!(preset  in presetstore)){
-        presetstore[preset] = {}; // allows for the other checks to run properly
     }
+};
 
-    // create new block
-    elementname = preset + "-block";
-    newelement = $('<div id="' + elementname + '"></div>');
-    $(element).append(newelement)
-    oldelement = element
-    element = "#" + elementname;
-    //$(newelement).css("diplay", "flex");
-    console.log($(newelement))
+
+function setlock(){
+    elementstore["lock"] = true;
+    console.log("lock set")
+}
+
+function releaselock(){
+    elementstore["lock"] = false;
+    console.log("lock unset")
+}
+
+function islocked(){
+    return elementstore["lock"];
+}
+
+function waitforlock(){
+    return new Promise((resolve, reject) => {
+        let intid = setInterval(function(){
+            if(!(islocked())){ // not locked
+                clearInterval(intid);
+                console.log("DONE WAITING FOR LOCK")
+                resolve(true)
+                //changetextbox(data, preset);
+            } else {
+                console.log("WAITING FOR LOCK TO ELEMENT")
+            }
+        }, 1000);
+    })
+}
+async function getelementinfo(preset){
     // get preset css
     if (!("url" in presetstore[preset])){
         url = createurl("templates", preset, preset+".css");
@@ -185,13 +138,137 @@ async function changetextbox(data, preset="message"){
     };
 
     // get preset html
+    presetlist = [];
+    if (!("html" in presetstore[preset])){
+        presetlist.push(preset+".html");
+        /*
+        htmldata = {"preset": preset, "filename": preset+".html"}
+        msg = msgbuilder("web", "template", htmldata);
+        console.debug("started wait")
+        htmlmsg = await waitforresult(msg); //.then(console.warn); // func in networking that returns message
+        console.debug("done waiting")
+        presetstore[preset]["html"] = htmlmsg;
+        */
+    }
+    //htmlmsg = presetstore[preset]["html"];
+
+    // get preset json
+    if (!("json" in presetstore[preset])){
+        presetlist.push(preset+".json");
+        /*
+        jsondata = {"preset": preset, "filename": preset+".json"}
+        msg = msgbuilder("web", "template", jsondata);
+        //console.debug("started wait")
+        jsonmap = await waitforresult(msg);
+        jsonmap = jsonmap.data;
+        console.debug(jsonmap)
+        presetstore[preset]["json"] = jsonmap;
+        */
+    }
+    //jsonmap = presetstore[preset]["json"];
+
+    // build msg
+    presetdata = {"preset": preset, "filenames": presetlist}
+    msg = msgbuilder("web", "template", presetdata);
+
+    // send it, and get result
+    templatedata = await waitforresult(msg);
+    console.log(templatedata)
+
+    // check if you're missing anything
+    basearray = ["json", "html"];
+    Object.keys(templatedata.data).forEach(function(key){
+        value = templatedata.data[key]
+        ext = key.split(".")[1];
+        if (basearray.includes(ext)){
+            console.log("removing key")
+            basearray.splice(basearray.indexOf(ext), 1)
+        }
+    })
+    console.log({basearray})
+    // TODO: grab what's left
+
+    // assemble
+    while (Object.keys(templatedata.data).length == 0){} 
+    let html = templatedata.data[preset+".html"];
+    let json = templatedata.data[preset+".json"];
+
+    let findata = {"html": html, "json":json};
+    return findata
+}
+blacklist = ["admin", "web", "template", "text-text", "text-image"];
+
+async function changetextbox(data, preset="message"){
+    console.log("IN TEXTBOX")
+    // start timer
+    console.time("msgtimer")
+    console.debug(preset)
+    //if(blacklist.includes(preset)){
+        //return;
+    //}
+
+    console.debug(data)
+    element = pickelement(data);
+    console.log(element)
+    //lockres = await waitforlock() // check that element is editable
+    //console.log(lockres)
+    setlock(element)
+    sametype = false;
+    if (!(element in elementstore)){
+        elementstore[element] = [];
+        multi = false; // flag used for hint
+    } else {
+        console.log("found multiple, adding carousel")
+        multi = true; // flag used for hint
+        
+        // multiple in element
+        console.debug(element)
+        if (elementstore[element].includes(preset)){ // multiple of the same, updating
+            console.warn("found previous card of type, updating")
+            console.log(preset)
+            updatetextbox(data, preset, element);
+            sametype = true;
+            releaselock(element)
+            return
+        }
+    } 
+    elementstore[element].push(preset)
+    if (!(preset  in presetstore)){
+        presetstore[preset] = {}; // allows for the other checks to run properly
+    }
+
+    // create new block
+    let elementname = preset + "-block";
+    newelement = $('<div id="' + elementname + '"></div>');
+    $(element).append(newelement)
+    oldelement = element
+    element = "#" + elementname;
+    //$(newelement).css("diplay", "flex");
+
+    console.warn(preset)
+    let {html, json} = await getelementinfo(preset);
+    console.warn("Done with elementinfo")
+
+    // save those values
+    presetstore[preset]["html"] = html;
+    presetstore[preset]["json"] = json;
+
+    // get preset css
+    /*
+    if (!("url" in presetstore[preset])){
+        url = createurl("templates", preset, preset+".css");
+        $("head").append("<link rel='stylesheet' id='extracss' href='" + url + "' type='text/css' />");
+        presetstore[preset]["url"] = url;
+    };
+    
+    // get preset html
     if (!("html" in presetstore[preset])){
         htmldata = {"preset": preset, "filename": preset+".html"}
         msg = msgbuilder("web", "template", htmldata);
-        console.log("started wait")
+        console.debug("started wait")
         htmlmsg = await waitforresult(msg); //.then(console.warn); // func in networking that returns message
-        console.log("done waiting")
-        console.log(htmlmsg)
+        console.debug("done waiting")
+        console.debug(htmlmsg)
         presetstore[preset]["html"] = htmlmsg;
     }
     htmlmsg = presetstore[preset]["html"];
@@ -200,30 +277,29 @@ async function changetextbox(data, preset="message"){
     if (!("json" in presetstore[preset])){
         jsondata = {"preset": preset, "filename": preset+".json"}
         msg = msgbuilder("web", "template", jsondata);
-        console.log("started wait")
+        //console.debug("started wait")
         jsonmap = await waitforresult(msg);
         jsonmap = jsonmap.data;
-        console.log(jsonmap)
+        console.debug(jsonmap)
         presetstore[preset]["json"] = jsonmap;
     }
     jsonmap = presetstore[preset]["json"];
+    */
 
     // save data
     presetstore[preset]["data"] = data;
-    console.log("end of change text box")
 
     // apply it
     console.log("applying to:", element)
-    $(element).html(htmlmsg.data.data);
+    $(element).html(html);
 
 
     // fill in data
-    console.log({oldelement})
-    html = fillhtml(data, jsonmap)
+    html = await fillhtml(data, json, element)
     $(element).html(html);
 
+    console.warn("FILLED!")
     // add element to slider
-    console.trace($(element)[0].outerHTML)
     realhtml = $(element)[0].outerHTML; // gets html but includes the "<div id='weather-block'..." bit
 
     // remove old, unecessary element
@@ -236,10 +312,35 @@ async function changetextbox(data, preset="message"){
         $(element).text(msg);
     };
     //addslide(oldelement, htmlmsg.data.data);
-    if (multi){
-        hintslide(oldelement);
+    if (multi && !(sametype)){
+        if (console.timeLog("msgtimer") > (20 *1000)){
+            hintslide(oldelement)
+        }
     }
-
+    elementlock = false;
+    console.log("end of change text box")
+    releaselock(oldelement)
+    console.timeEnd("msgtimer");
 };
 
 
+async function updatetextbox(data, preset, element){
+    console.log("UPDATING")
+    elementname = preset + "-block";
+
+    // get json
+    jsonmap = presetstore[preset]["json"];
+    elementid = "#" + elementname;
+    console.debug({data})
+    html = await fillhtml(data, jsonmap, elementid)
+    //$(elementid).html(html);
+
+    console.timeLog("msgtimer");
+
+    if (console.timeLog("msgtimer") > (10 *1000)){
+            hintslide(oldelement)
+    } else if (console.timeLog("msgtimer") > (20 *1000)){
+        gotoslide(element, elementid)
+    }
+    console.timeEnd("msgtimer");
+}

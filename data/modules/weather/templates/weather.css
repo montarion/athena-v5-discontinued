@@ -4,12 +4,14 @@
     flex-grow: 1;
     position: relative;
     z-index: 2;
+    background: transparent;
 }
 
 #iconurl{
     display: flex;
     height: 100%;
     align-items: center;
+    background: transparent;
 }
 .text-text{
     height: 100%;
@@ -20,6 +22,7 @@
     flex-grow: 4;
     position: relative;
     z-index: 1;
+    background: transparent;
 }
 
 

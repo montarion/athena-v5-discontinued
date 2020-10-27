@@ -5,10 +5,10 @@ $("document").ready(function(){
 
 slideobj = {};
 function initslider(element){
-    console.warn("initializing")
+    //console.warn("initializing")
     base = '.swiper-container';
     target = element + base;
-    console.log("target is", target)
+    //console.log("target is", target)
     // add wrapper
     wrapper = $('<div class="swiper-wrapper"></div>');
     $(target).append(wrapper);
@@ -64,11 +64,12 @@ function addslide(element, htmldata){
     console.warn("Adding slide.")
     base = '.swiper-container > .swiper-wrapper';
     target = element + base;
-    swiper = slideobj[element];
+    swiper = getslider(element);
+
 
 
     // add necessary class to html
-    console.warn($(htmldata))
+    //console.warn($(htmldata))
     tmpdata = $(htmldata);
     $(tmpdata).addClass("swiper-slide");
 
@@ -76,14 +77,15 @@ function addslide(element, htmldata){
     $(tmpdata).css("display", "flex")
 
     htmldata = $(tmpdata)[0].outerHTML;
-    console.log(htmldata)
+    //console.log(htmldata)
 
     swiper.appendSlide(htmldata);
 }
+/*
 function reloadslider(element){
     $(element).slick("refresh");
 }
-
+*/
 function reloadImage(target) {
     console.warn("this func lives in ui.js")
     path = target.attr("src");
@@ -93,13 +95,14 @@ function reloadImage(target) {
 }
 
 function updateslider(element){
-    swiper = slideobj[element];
+    swiper = getslider(element);
     swiper.update()
 }
 
 function hintslide(element){
     // TODO:
-    swiper = slideobj[element];
+    swiper = getslider(element);
+
     // turn element blue, for contrast
     // register eventhandler
 
@@ -119,4 +122,19 @@ function hintslide(element){
         $(elname).fadeOut(300);
      }, 600);
 
+}
+function getslider(element){
+    swipercontainerid = "#"+$(element).attr("id");
+    console.warn(element)
+    console.warn(swipercontainerid)
+    swiper = document.querySelector(swipercontainerid+'.swiper-container').swiper;
+    return swiper
+}
+function gotoslide(element, target){
+    swiper = getslider(element);
+    swiper.slides.forEach(function(element, index){
+        if(element == $(target)[0]){
+            swiper.slideTo(index);
+        }
+    });
 }

@@ -11,22 +11,20 @@ async function connect() { // structure from https://stackoverflow.com/a/2317622
     ws.onopen = async function() {
         console.log("connection opened!");
         state = ws.readyState;
-        console.log({state})
+        //console.log({state})
         readytosend = ws.readyState === ws.OPEN;
         while (!(ws.readyState === ws.OPEN)){
             readytosend = ws.readyState === ws.OPEN;
-            console.log(readytosend)
             await sleep(0.1)
         }
-        console.log(ws.readyState === ws.OPEN)
 
         msg = {"category":"test", "type":"web"};
-        console.warn(ws)
         sendmsg(msg);
     };
 
-    ws.onmessage = function (event) {
-        msghandler(event.data);
+    ws.onmessage = async function (event) {
+        console.time("receive");
+        await msghandler(event.data);
     };
 
     ws.onclose = function (event){
@@ -37,6 +35,7 @@ async function connect() { // structure from https://stackoverflow.com/a/2317622
     };
 
 };
+alert("Waitforresult( in networking) has an error with the template gathering")
 connect();
 
 
@@ -65,31 +64,14 @@ async function sendmsg(msg){
     if (typeof msg != "string"){
         msg = JSON.stringify(msg);
     }
-    console.log(ws.readyState)
     readytosend = ws.readyState === ws.OPEN;
-    console.log(readytosend)
     i = 0;
     ws.send(msg)
-    /*
-    while (true){
-        if (readytosend){
-            ws.send(msg);
-            break
-        } else {
-            if (i < 3) {
-                await sleep(1);
-                i++;
-            } else {
-                i = 0;
-                ws.close()
-                reopen();
-            }
-        }
-    }*/
 }
 
 async function checkguidobj(guid){
     while (!(guid in guidobj)){
+        console.log("waiting for guid: " + guid)
         console.log("not yet..") //  turn this into a console log that uses setinterval or settimeout for a log after a bit.
         await sleep(0.5)
     }
@@ -103,14 +85,14 @@ async function waitforresult(smsg, guid=false){
     if (!guid){
         guid = getGuid();
     }
-    smsg.metadata = {"copy": {"guid":guid}};
+    smsg.metadata["copy"] = {"guid":guid};
     sendmsg(smsg);
     id = false;
     msg = await checkguidobj(guid);
     return msg;
 }
-
-function msghandler(message){
+blacklist = ["admin", "web", "template", "text-text", "text-image"];
+async function msghandler(message){
     msg = JSON.parse(message);
     console.log('Message from server ', msg);
     category = msg.category;
@@ -121,14 +103,21 @@ function msghandler(message){
         if ("guid" in msg.metadata){
             guid = msg.metadata.guid;
             guidobj[guid] = msg;
+            return;
         }
     }
-    console.log(data)
-    console.log(category);
-    console.log(type)
+    //console.log(data)
+    //console.log(category);
+    //console.log(type)
     console.time("message")
-    
+    console.log({category})
+    if(!(blacklist.includes(category))){
+        lockres = await waitforlock() // check that element is editable
+        console.log(lockres)
+        changetextbox(data, category);
+    }
     // eventually remove this filtering and just error nicely
+    /*
     if (category == "weather") {
         if (type == "current") {
             city = data.location;
@@ -147,5 +136,5 @@ function msghandler(message){
     }
     if (category == "question") {
 
-    }
+    }*/
 }
