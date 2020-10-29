@@ -25,11 +25,9 @@ class Database:
             self.table = table
 
         #t = self.gettable(table)
-        fulldata = ""
-        while len(fulldata) == 0:
-            with open(self.db) as f:
-                # get data
-                fulldata = json.loads(f.read())
+        with open(self.db) as f:
+             # get data
+             fulldata = json.loads(f.read())
 
 
         tables = fulldata.keys()
