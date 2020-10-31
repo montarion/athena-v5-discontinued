@@ -28,7 +28,11 @@ class Core:
         for item in rmlist:
             if item in filelist:
                 filelist.remove(item)
-        
+        tmplist = []
+        for item in filelist:
+            if item.split(".")[1] == "py":
+                tmplist.append(item)
+        filelist = tmplist
 
         # import them
         
