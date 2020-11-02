@@ -35,7 +35,7 @@ async function connect() { // structure from https://stackoverflow.com/a/2317622
     };
 
 };
-alert("Waitforresult( in networking) has an error with the template gathering")
+alert("Messages after the first aren't parsed anymore, perhaps disable the lock system in text.js?")
 connect();
 
 
@@ -66,6 +66,7 @@ async function sendmsg(msg){
     }
     readytosend = ws.readyState === ws.OPEN;
     i = 0;
+    console.trace("SENT MESSAGE: ", msg)
     ws.send(msg)
 }
 
@@ -79,6 +80,7 @@ async function checkguidobj(guid){
     return msg;
 }
 async function waitforresult(smsg, guid=false){
+    console.trace(smsg)
     if (typeof smsg != "object"){
         smsg = JSON.parse(smsg);
     }
@@ -89,12 +91,18 @@ async function waitforresult(smsg, guid=false){
     sendmsg(smsg);
     id = false;
     msg = await checkguidobj(guid);
+    console.debug("GOT RESULT")
+    console.info({msg})
     return msg;
 }
 blacklist = ["admin", "web", "template", "text-text", "text-image"];
+msgqueue = []
 async function msghandler(message){
+    if (typeof message === "undefined"){
+        return;
+    }
     msg = JSON.parse(message);
-    console.log('Message from server ', msg);
+    console.info('Message from server ', msg);
     category = msg.category;
     type = msg.type;
     data = msg.data;
@@ -104,37 +112,41 @@ async function msghandler(message){
             guid = msg.metadata.guid;
             guidobj[guid] = msg;
             return;
+        } else if ("copy" in msg.metadata){
+            guid = msg.metadata.copy.guid;
+            guidobj[guid] = msg;
+            return;
         }
     }
-    //console.log(data)
     //console.log(category);
-    //console.log(type)
     console.time("message")
-    console.log({category})
-    if(!(blacklist.includes(category))){
-        lockres = await waitforlock() // check that element is editable
-        console.log(lockres)
-        changetextbox(data, category);
-    }
-    // eventually remove this filtering and just error nicely
-    /*
-    if (category == "weather") {
-        if (type == "current") {
-            city = data.location;
-            temp = data.temp;
-            iconurl = data.iconurl;
-            findata = {"city":city, "temp":temp, "icon":iconurl};
-            
-            changetextbox(data, "weather");
-            console.timeLog("message")
+    let inblacklist = (blacklist.includes(category) || blacklist.includes(type))
+    console.info({category})
+    console.info({inblacklist}, {data})
+    if(inblacklist){
+        console.debug("skipping..")
+        console.debug({data})
+    } else {
+        /*if (!(islocked())){
+            setlock()
+        }*/
+        // if editlock
+        if (islocked){
+            console.log("locked, waiting..")
+            msgqueue.push(message)
+        } else {
+            console.log("Working on message: ", message)
+            setlock()
         }
-    }
-    if (category == "anime"){
-        if (type == "lastshow"){
-            changetextbox(data, "anime")
-        }
-    }
-    if (category == "question") {
 
-    }*/
+        console.info("running!")
+        console.info({msg})
+        //lockres = await waitforlock() // check that element is editable
+        //console.log({lockres})
+        console.info(data)
+        console.info({msg})
+        console.info(category)
+        changetextbox(data, category);
+        releaselock()
+    }
 }
