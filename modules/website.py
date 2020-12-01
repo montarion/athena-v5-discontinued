@@ -27,6 +27,7 @@ class Website:
     def detecttemplates(self):
         # detect other ui elements
         pass
+
     def startrun(self):
         staticfolder = os.path.join(self.basefolder, "static")
         tmpfolder = os.path.join(self.basefolder, "templates")
@@ -40,14 +41,15 @@ class Website:
             return render_template("index.html")
 
 
-        @self.app.route("/templates/<path:location>/<path:filename>")
-        def template(location, filename):
-            tmppath = os.path.abspath(f"data/modules/{location}/templates/")
-            if filename.split(".")[-1] in ["css"]:
+        @self.app.route("/templates/<path:size>/<path:location>/<path:filename>")
+        def template(location, filename, size):
+            tmppath = os.path.abspath(f"data/modules/{location}/templates/{size}")
+            if filename.split(".")[-1] in ["css", "js"]:
                 finpath = safe_join(tmppath, filename)
                 self.logger(tmppath)
                 return send_from_directory(tmppath, filename)
             else:
                 return 404
+
         server = pywsgi.WSGIServer(('0.0.0.0', 8080), self.app, handler_class=WebSocketHandler)
         server.serve_forever()
