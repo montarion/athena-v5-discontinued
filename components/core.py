@@ -141,12 +141,13 @@ class Core:
         taskdict = {}
         for module in self.moduledict:
             name = module
-            self.logger(name, "debug", "yellow")
             dependencies = {str(x):getattr(self.thismod, str(x)) for x in self.moduledict[module]["attr"]["dependencies"]["dependencies"]}
             #self.logger(f"Dependencies: {dependencies}", "debug", "blue")
             capabilities = self.moduledict[module]["attr"]["capabilities"]
             classobj = self.moduledict[module]["classobj"]
             task = ""
+            if "ui" in capabilities:
+                uiinterfaces[module] = finalclassobj
             if "blocking" in capabilities:
                 # use threaded
                 finalclassobj = classobj(**dependencies)
@@ -155,9 +156,8 @@ class Core:
                 taskdict[module] = {}
                 taskdict[module]["taskobj"] = taskobj
                 taskdict[module]["type"] = "threaded"
-            if "ui" in capabilities:
-                uiinterfaces[module] = finalclassobj
             else:
+                self.logger(name)
                 timing = self.moduledict[module]["attr"]["timing"]
                 finalclassobj = classobj(**dependencies)
                 taskobj = getattr(finalclassobj, "startrun") # running the actual function

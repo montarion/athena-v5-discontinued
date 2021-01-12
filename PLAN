@@ -6,8 +6,87 @@ a way to save user data, and a way to find new modules.
 
 everything else is a module, and the system MUST work perfectly fine without those modules
 (though modules may specify dependencies)
-anime is a module
+
+anime is a module - DONE
 reddit is a module
 website is a module
 discord could be a module
 handling clients is a module
+
+
+-- create a way for modules to request the result of other modules, and for modules to send their results to other modules.
+
+
+E.g. a compression module wants to be involved when anime is done.
+
+
+In general, figure out intermodule communication, preferably without redis, and by changing as little per module as possible (you want the outside to take care of it, as modules must be simple and standalone)
+
+--watcher idea
+
+
+Write a class that executes other functions, like
+
+
+Target=watcher.execute(anime(), getshows())
+
+
+Getshows() returns a thing, like "downloaded anime!"
+
+
+Watcher sees that, and then (in memory) reports that to other classes that have subscribed to anime updates.
+Watcher already has the class objects, so it can start another function in that class, with the necessary data.
+Example:
+
+
+Watcher.execute(anime(), getshows())
+Watcher.register(compress())
+
+
+Are run. Getshows () returns a dict with a title keyvalue pair. 
+Register(compress()) goes through the init of the torrent class, and grabs the watchme dictionary,
+which looks like this:
+
+
+Watchme = {trigger: {"class":"anime", "returnvalue": "title"}, "result":{"class":"compress", "function":"watch", "args":{"title":"title"}}}
+
+
+It saves that info, and when class anime returns something that contains "title",
+that title gets sent to compress ().watch(**args)  - where args looks like {"title": title}
+
+---
+SCRATCH THAT, use redis cause fuck it
+---
+
+data = {"self": instance.__class_}
+watcher().register(data)
+
+
+---Change the watcher to allow modules to run function in special standalone modules
+
+Anime.py:
+
+def init(self, availablefuncs, ..): # available funcs = {"networking":["list", "of", "funcs"], "compressor":[], ...} 
+    self.availablefuncs = availablefuncs
+
+def getshows():
+    ...
+    if "networking" in self.availablefuncs.keys():
+        if "send" in self.availablefuncs["networking":
+            data = {"foo":"bar"}
+            Watcher().runfunc(class = "networking", func = "send" args = data)
+
+
+This way, no imports have to be done, like ever!
+
+also all funcs will be able to execute other funcs(sec risk?)
+ > permission system for func execution would be possible, by looking at who called the func
+
+-------------
+
+categorize into:
+
+core: core functions like networking and database
+ui: interfaces like the website
+creators: processes that create data, like anime and monitor
+activities: processes that have to do with the user, like the calendar, their watchlist, or their morning routine

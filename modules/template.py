@@ -1,19 +1,18 @@
 from components.logger import Logger
 
 class Template:
-    def __init__(self):
-        self.dependencies = {"tier":"user", "dependencies":[]}
-        self.capabilities = ["timed", "async"]
-        self.timing = {"unit": "seconds", "count":2}
+    def __init__(self, Networking=None):
+        self.dependencies = {"tier":"user", "dependencies":["Networking"]}
+        self.capabilities = []
+        self.timing = {"unit": "minutes", "count":10}
         # do not add init stuff
 
-    def doStuff(self):
-        self.logger("Doing stuff...")
-        
+        def dostuff(self):
+            pass
 
     def startrun(self):
-        """this is what gets called by main"""
+        """Description of what this module does"""
         # init stuff..
-        self.logger = Logger("TEMPLATE").logger
-        self.doStuff()
-        
+        self.logger = Logger("Killswitch").logger
+        self.datapath = f"data/modules/{self.__class__.__name__.lower()}"
+        self.dostuff()

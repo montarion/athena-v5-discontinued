@@ -1,3 +1,4 @@
+console.time("LOG")
 $('document').ready(function(){
     $(window).resize(function(){
         //resizeimage("#topimage")
@@ -7,12 +8,10 @@ $('document').ready(function(){
         console.log("hey")
         console.log($(this).width())
     });
-/*    $('.main-carousel').flickity({
-      // options
-      cellAlign: 'left',
-      contain: true
-    });
-    addimage();*/
+    // start msg handler
+    //msghandler()
+    setInterval(msghandler, 2000) // msghandler lives in networking.js
+    //addimage();
     //addimage("#bottomimage", "static/files/images/test.jpg")
 });
 

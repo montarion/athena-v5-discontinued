@@ -44,10 +44,12 @@ class Website:
         @self.app.route("/templates/<path:size>/<path:location>/<path:filename>")
         def template(location, filename, size):
             tmppath = os.path.abspath(f"data/modules/{location}/templates/{size}")
-            if filename.split(".")[-1] in ["css", "js"]:
+            if filename.split(".")[-1] in ["css"]:
                 finpath = safe_join(tmppath, filename)
                 self.logger(tmppath)
                 return send_from_directory(tmppath, filename)
+            if filename.split(".")[-1] == "js":
+                return send_from_directory(tmppath, filename, mimetype = "text/javascript")
             else:
                 return 404
 

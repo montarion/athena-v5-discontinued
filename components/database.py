@@ -3,7 +3,7 @@ from components.logger import Logger
 import json, traceback, inspect, shortuuid
 from time import sleep
 class Database:
-    membase = {} # this is specific to the calling module
+    membase = {}
     def __init__(self, Networking=None):
         self.logger = Logger("DATABASE").logger
         self.db = ('data/db.json')
@@ -146,7 +146,12 @@ class Database:
             table = fulldata[table]
             res = {"status": 200, "resource": table}
         except KeyError:
-            res = {"status": 404, "resource": f"table: \"{table}\" not found"}
+            try: #create it
+                table = {}
+                fulldata[table] = {}
+                res = {"status": 200, "resource": table}
+            except:
+                res = {"status": 404, "resource": f"table: \"{table}\" not found"}
         #self.logger(res, "debug", "yellow")
         return res
 

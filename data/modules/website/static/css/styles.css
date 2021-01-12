@@ -6,6 +6,11 @@
     font-family: 'Roboto', sans-serif;
     border-radius:10px;
 }
+body, html{
+    height: 100%;
+    width: 100%;
+    margin: 0; 
+}
 
 .sidebar{
     width: 0px;
@@ -20,27 +25,31 @@
     display: flex;
     justify-content: flex-start;
     align-items: center;
+    background-size: cover;
 }
 
 #bottomtext{ 
     grid-area: bottomtext;
-    margin: 0px 20px 20px 0;
-    display: flex;
-    flex-direction: row;
-    align-items: stretch;
+    margin: 20px;
     position: relative;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    background-size: cover;
 }
 
 #topimage{
     grid-area: topimage;
-    margin: 20px 20px 20px 0;
+    margin: 20px;
     position: relative;
+    transition: 2s;
 }
 
 #bottomimage{
     grid-area: bottomimage;
-    margin: 0px 20px 20px 20px;
+    margin: 20px;
     position: relative;
+    transition: 2s;
 }
 
 /* mobile */
@@ -76,6 +85,11 @@
         grid-template-columns: repeat(2, minmax(40%, auto));
         grid-template-rows: repeat(2, minmax(10%, auto));
     }
+    /* also add-remove margins*/
+    #toptext{margin:20px}
+    #bottomtext{margin: 0px 20px 20px 0;}
+    #topimage{margin: 20px 20px 20px 0;}
+    #bottomimage{margin: 0px 20px 20px 20px;}
 }
 
 .text{
@@ -162,4 +176,54 @@ span{
 
 .bold{
     font-weight: bold;
+}
+
+/* focussed ui */
+
+.bigcard{
+    background-color:#212936;
+    border-radius: 4px;
+    margin: 20px;
+    grid-area: bigcard;
+    /*width: 95vw;
+    height: 95vh;*/
+}
+
+.maincontent.focus{
+    display: block;
+    width: 100vw;
+    height: 100%;
+    min-height: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
+    overflow-y: hidden;
+}
+
+
+/* animation | transition */
+
+@keyframes go-fs-old{
+    from {
+        
+        grid-template-columns: repeat(2, minmax(40%, auto));
+        grid-template-rows: repeat(2, minmax(10%, auto));
+    }
+    50%{
+        grid-template-columns: repeat(2, minmax(100%, auto));
+        grid-template-rows: repeat(2, minmax(10%, auto));
+    }
+    to{
+        
+        grid-template-columns: repeat(2, minmax(100%, auto));
+        grid-template-rows: repeat(2, minmax(100%, auto));  
+    }
+}
+
+@keyframes new-text-card-with-image{
+    from{
+        
+    }
+    to{
+
+    }
 }

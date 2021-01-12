@@ -1,0 +1,141 @@
+/*  anime    */
+
+#anime-block .text-image{
+    height: 100%;
+    position: relative;
+    z-index: -1;
+    background:transparent;
+}
+
+#anime-block .image-fade{
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(0deg, rgba(41,45,52,1) 0%, rgba(41,45,52,0) 100%);
+    position: relative;
+    z-index: 2;
+}
+#anime-block .text-text{
+    background: transparent;
+    height: 100%;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+}
+
+#anime-block .text-text > #status{
+    display: none;
+}
+
+#banner{
+    display:none;
+}
+
+#cover{
+    display:block;
+}
+.bigcard {
+    display:flex;
+    flex-direction: column ;
+    align-items: normal !important;
+}
+
+.bigheader{
+    order:0;
+    flex-grow: 1;
+    height: 50%;
+} 
+
+.bigheader img{
+    height: auto;
+    width: 100%;
+}
+
+.bigheader > .text-image{
+    height: max-content;
+    overflow: clip;
+}
+
+.details{
+    order:1;
+    flex-grow: 2;   
+    overflow: auto;
+}
+
+.list{
+    
+}
+.listitem{
+    border: 1px solid grey;
+    border-radius: 0px;
+    border-style: solid none solid none;
+    
+}
+.listitem > .title{
+    font-weight: bold;
+}
+
+.listitem > .episode{
+    
+}
+
+.listitem>.episode::before{content: "\00a0\00a0 episode: "; /*nsbp in utf8*/}
+
+.listitem > .compressed{
+    display: none;
+}
+.listitem>.compressed::before{content: "\00a0\00a0"; /*nsbp in utf8*/}
+
+.listitem > .size{
+}
+.listitem>.size::before{content: "\00a0\00a0 size: "; /*nsbp in utf8*/}
+
+
+@media only screen and (min-width: 768px) {
+    /* desktop */
+    #status{
+        display: inline;
+        position: absolute;
+        right: 10px;
+        bottom: 5px;
+    }
+    #cover{
+        display:none;
+    }
+    #banner{
+        display: block;
+    }
+    .listitem{
+        display: flex;
+        line-height: 3;
+        flex-wrap: nowrap;
+        overflow: hidden;
+    }
+    .listitem>.title{
+        flex-shrink: 0;
+        flex-grow: 5;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        max-width: 50%;
+        
+    }
+    .listitem>.episode::before{
+        content: "\00a0\00a0 episode: "; /*nsbp in utf8*/
+    }
+    .listitem>.episode{
+        flex-shrink: 0;
+        flex-grow: 5;
+    }
+    .listitem>.compressed{
+        flex-grow: 0.2;
+        flex-shrink: 0;
+    }
+    .listitem>.size{
+        flex-grow: 0.2;
+        flex-shrink: 0;
+
+    }
+    
+}

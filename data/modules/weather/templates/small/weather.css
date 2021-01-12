@@ -13,7 +13,9 @@
     align-items: center;
     background: transparent;
 }
-.text-text{
+
+
+#weather-block .text-text {
     height: 100%;
     width: 100%;
     display: flex;
@@ -25,4 +27,22 @@
     background: transparent;
 }
 
+#weather-block .text-text > .fluff{
+    display:none;
+}
+
+#weather-block .text-text > #location::before{
+    content: "\00a0\00a0"; /*nsbp in utf8, from https://stackoverflow.com/a/11637150*/
+}
+@media only screen and (min-width: 768px) {
+    /*desktop*/
+    #weather-block .text-text > .fluff{
+        display:inline;
+    }
+    #weather-block .text-text > #location::before{
+        content: "";
+    }
+
+
+}
 

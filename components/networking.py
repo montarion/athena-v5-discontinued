@@ -1,6 +1,5 @@
 import websockets, asyncio, json, os, tracemalloc, shortuuid
 from components.logger import Logger
-from time import sleep
 class Networking:
 
     def __init__(self, database=None):
@@ -32,6 +31,7 @@ class Networking:
                     self.logger(str(e2))
                     await websocket.close()
                     break
+
     def createid(self): 
         table = self.db.gettable("users") 
         if table["status"] == 200:
@@ -100,15 +100,20 @@ class Networking:
         type = msg["type"]
         data = msg.get("data", {})
         metadata = msg.get("metadata", {})
+        # always check for guid
+        if "copy" in metadata:
+            self.logger(metadata["copy"])
+            newmeta = metadata["copy"]
+            metadata = newmeta
 
         if category == "admin":
             if type == "signin":
                 name = data["name"]
-                print("received signin")
-                print(data.keys())
+                self.logger("received signin")
+                self.logger(data.keys())
                 if "id" in data.keys():
                     id = data["id"]
-                    print(f"already has id: {id}")
+                    self.logger(f"already has id: {id}")
                 else:
                     #create new id
                     id = self.createid()
@@ -116,6 +121,7 @@ class Networking:
                 self.db.write(id, {"id":id, "name": name}, "users")
                 returnmsg = json.dumps({"category":"admin", "type":"signinresponse", "data":{"id":id}})
                 await self.send(returnmsg, [id])
+
         if category == "test":
             self.logger("got test message", "debug", "yellow")
             if type == "web":
@@ -127,8 +133,8 @@ class Networking:
                 name = "website"
                 self.db.membase[id] = {"socket": websocket}
                 self.db.write(id, {"id":id, "name": name}, "users")
-                returnmsg = json.dumps({"category":"admin", "type":"signinresponse", "data":{"id":id}})
-
+                data = {"id": id}
+                returnmsg = self.messagebuilder("admin", "signinresponse", data, metadata)
                 await websocket.send(returnmsg)
 
                 # weather
@@ -137,15 +143,24 @@ class Networking:
                 if curdict["status"][:2] == "20":
                     data = curdict["resource"]
 
-                    msg = self.messagebuilder("weather", "current", data)
+                    msg = self.messagebuilder("weather", "current", data, metadata)
                     await websocket.send(msg)
 
+                #await asyncio.sleep(6)
                 # anime
                 curdict = self.db.query("lastshow", "anime")
                 if curdict["status"][:2] == "20":
                     data = curdict["resource"]
 
-                    msg = self.messagebuilder("anime", "lastshow", data)
+                    msg = self.messagebuilder("anime", "lastshow", data, metadata)
+                    await websocket.send(msg)
+
+                # system monitor
+                curdict = self.db.query("info", "monitor")
+                if curdict["status"][:2] == "20":
+                    data = curdict["resource"]
+
+                    msg = self.messagebuilder("monitor", "info", data, metadata) # ! the category("monitor" here, MUST be the name of the folder in data/modules.)
                     await websocket.send(msg)
 
             if type == "question":
@@ -163,7 +178,7 @@ class Networking:
                 
                 if curdict["status"][:2] == "20":
                     data = curdict["resource"]
-                    msg = self.messagebuilder(category, type, data)
+                    msg = self.messagebuilder(category, type, data, metadata)
                     await websocket.send(msg)
                 else:
                     returnmsg = {"status":404, "message":"couldn't find current weather"}
@@ -176,8 +191,14 @@ class Networking:
                 if curdict["status"][:2] == "20":
                     data = curdict["resource"]
 
-                    msg = self.messagebuilder("anime", "lastshow", data)
+                    msg = self.messagebuilder("anime", "lastshow", data, metadata)
                     await websocket.send(msg)
+            if type == "eplist":
+                self.logger("GOT EPLIST REQUEST")
+                title = data["title"]
+                testlist = [{"size": 1280, "compressed":False, "episode":18},{"size": 350, "compressed":True, "episode":1},{"size": 1350, "compressed":False, "episode":11}, {"size": 1280, "compressed":False, "episode":16},{"size": 350, "compressed":True, "episode":3},{"size": 1350, "compressed":False, "episode":15}, {"size": 1280, "compressed":False, "episode":14},{"size": 350, "compressed":True, "episode":4},{"size": 1350, "compressed":False, "episode":22}]
+                msg = self.messagebuilder(category, type, testlist, metadata)
+                await websocket.send(msg)
 
         if category == "web":
             if type == "template":
@@ -187,28 +208,36 @@ class Networking:
                 data = msg["data"]
                 preset = data["preset"] # e.g. weather
                 files = data["filenames"] # e.g. weather.html
+                elementsize = data["size"] # either small or big(for expanded card)
                 metadata = msg["metadata"]
                 if "copy" in metadata:
                     self.logger(metadata["copy"])
                     newmeta = metadata["copy"]
                     metadata = newmeta
 
-                tmppath = os.path.abspath(f"data/modules/{preset}/templates/")
-                finres = {}
-                for filename in files:
-                    extension = filename.split(".")[-1]
-                    self.logger(extension, "info", "blue")
-                    if extension in ["js", "html", "json"]:
-                        finpath = os.path.join(tmppath, filename)
-                        with open(finpath) as f:
-                            result = f.read()
-                        if extension == "json":
-                            result = json.loads(result)
-                        finres[filename] = result
-                data = finres
-                returnmsg = self.messagebuilder(category, type, data, metadata)
-                self.logger(f"Returning: {returnmsg}")
-                await websocket.send(returnmsg)
+                try:
+                    tmppath = os.path.abspath(f"data/modules/{preset}/templates/{elementsize}")
+                    finres = {}
+                    for filename in files:
+                        extension = filename.split(".")[-1]
+                        self.logger(extension, "info", "blue")
+                        if extension in ["js", "html", "json"]:
+                            finpath = os.path.join(tmppath, filename)
+                            with open(finpath) as f:
+                                result = f.read()
+                            if extension == "json":
+                                result = json.loads(result)
+                            finres[filename] = result
+                    data = finres
+                    returnmsg = self.messagebuilder(category, type, data, metadata)
+                    self.logger(f"Returning: {returnmsg}")
+                    await websocket.send(returnmsg)
+                except Exception as e1:
+                    self.logger(f"Error: {str(e1)}")
+                    data = {"status": 404}
+                    returnmsg = self.messagebuilder(category, type, data, metadata)
+                    self.logger(f"Returning: {returnmsg}")
+                    await websocket.send(returnmsg)
 
         # maybe only do this bit if there's a flag set in membase, for security
         self.watcher.publish(self, msg)

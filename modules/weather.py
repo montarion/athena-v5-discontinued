@@ -10,7 +10,7 @@ class Weather:
         self.db = Database
         self.watcher = Watcher
         self.logger = Logger("Weather").logger
-
+        self.iconbase = "http://openweathermap.org/img/wn/"
         # do not add init stuff
 
 
@@ -29,7 +29,7 @@ class Weather:
     def getcurrentweather(self):
         if not self.watcher:
             self.watcher = self.db.membase["classes"]["Watcher"]
-        title = self.db.query("city", "personalia")["resource"]
+        self.location = self.db.query("city", "personalia")["resource"]
         apikey = self.db.query(["weather", "apikey"], "credentials")
         if str(apikey["status"])[:2] == "20":
             apikey = apikey["resource"]
@@ -42,7 +42,7 @@ class Weather:
         else:
             self.logger("Couldn't find coordinates, or user didn't respond. Exiting.")
             exit() # TODO: only kill this job, and provide feedback through the ui
-        baseurl = f"https://api.openweathermap.org/data/2.5/onecall?lat={lat}&lon={lon}&appid={apikey}&units=metric"
+        baseurl = f"https://api.openweathermap.org/data/2.5/onecall?lat={lat}&lon={lon}&exclude=minutely&appid={apikey}&units=metric"
 
         #TODO try-catch this HTTP request
         res = requests.get(baseurl).json()
@@ -54,33 +54,78 @@ class Weather:
         try:
             timezone = res["timezone"]
             # maybe write to file
+            weatherdict = {}
 
             # current weather
-            curdict = {}
-            cur = res["current"]
-            dt = int(time.time()) # time of request, unix, utc
-            temp = cur["temp"]
-            sunrise = cur["sunrise"]
-            sunset = cur["sunset"]
-            clouds = cur["clouds"] # cloudiness in %
-            rain = cur.get("rain", None)
-            windspeed = cur["wind_speed"]
-            icon = cur["weather"][0]["icon"]
-            iconbase = "http://openweathermap.org/img/wn/"
-            iconurl = iconbase + icon + "@2x.png"
-            curdict = {"location": title, "time": dt, "temp":temp, "rain":rain, "sunrise":sunrise, "sunset":sunset, "clouds":clouds, "windspeed":windspeed, "iconurl":iconurl}
-            # uitest
-            curdict["background"] = "https://i.imgur.com/oOz9jCd.gif"
-            # save it
+            curdict = self.parsecurrent(res["current"])
             self.db.write("currentweather", curdict, "weather")
+            weatherdict["current"] = curdict
+
+            # next x(3) hours
+            hourdict = self.parsehourly(res["hourly"], 3)
+            self.db.write("hourforecast", hourdict, "weather")
+            weatherdict["hours"] = hourdict
+
+            # tomorrow
+            tomorrowdict = self.parsetomorrow(res["daily"])
+            self.db.write("tomorrowforecast", tomorrowdict, "weather")
+            weatherdict["tomorrow"] = tomorrowdict
+
             # publish it
-            #self.watcher.publish(self, curdict)
-            return {"status":200, "resource":curdict}
+            self.watcher.publish(self, weatherdict)
+            return {"status":200, "resource":weatherdict}
         except Exception as e:
             self.logger(e, "alert", "red")
             traceback.print_exc()
             return {"status":503, "resource": "something went wrong."}
 
+    def parsecurrent(self, data):
+        pdict = {
+            "location": self.location,
+            "dt": data["dt"],
+            "temp": data["temp"],
+            "feelslike": data["feels_like"],
+            "sunrise": data["sunrise"],
+            "sunset": data["sunset"],
+            "clouds": data["clouds"],
+            "windspeed": data["wind_speed"],
+            "iconurl": self.iconbase + data["weather"][0]["icon"] + "@2x.png"
+                }
+        if "rain" in data:
+            pdict["rain"] = data["rain"]
+        # uitest
+        pdict["background"] = "https://i.imgur.com/oOz9jCd.gif"
+        return pdict
+
+    def parsehourly(self, data, hours):
+        tmplist = []
+        for d in data[1:hours+1]:
+            tmpdict = {
+                "location": self.location,
+                "dt": d["dt"],
+                "temp": d["temp"],
+                "feelslike": d["feels_like"],
+                "clouds": d["clouds"],
+                "windspeed": d["wind_speed"],
+                "pop": d["pop"],
+                "iconurl": self.iconbase + d["weather"][0]["icon"] + "@2x.png"
+            }
+            tmplist.append(tmpdict)
+        return tmplist
+    def parsetomorrow(self, data):
+        data = data[0] # only pick tomorrow
+        tdict = {
+            "location": self.location,
+            "dt": data["dt"],
+            "temp": data["temp"],
+            "feelslike": data["feels_like"],
+            "sunrise": data["sunrise"],
+            "sunset": data["sunset"],
+            "clouds": data["clouds"],
+            "windspeed": data["wind_speed"],
+            "iconurl": self.iconbase + data["weather"][0]["icon"] + "@2x.png"
+        }
+        return tdict
     def startrun(self):
         """this is what gets called by main"""
         # init stuff..

@@ -1,0 +1,44 @@
+/*  anime    */
+
+#anime-block{
+    transition:height 2s;
+}
+#anime-block .text-image{
+    height: 100%;
+    position: relative;
+    z-index: 2;
+    background:transparent;
+}
+
+#anime-block .image-fade{
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(0deg, rgba(41,45,52,1) 0%, rgba(41,45,52,0) 100%);
+    position: relative;
+    z-index: -1;
+}
+#anime-block .text-text{
+    background: transparent;
+    height: 100%;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+}
+
+#anime-block .text-text > #status{
+    display: none;
+}
+
+
+@media only screen and (min-width: 768px) {
+    /* desktop */
+    #anime-block .text-text > #status{
+        display: inline;
+        position: absolute;
+        right: 10px;
+        bottom: 5px;
+    }
+}

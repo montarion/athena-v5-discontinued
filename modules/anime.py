@@ -1,5 +1,5 @@
 import os, requests, json, feedparser, re, time
-
+from time import sleep
 from components.database import Database
 from components.logger import Logger
 
@@ -7,7 +7,7 @@ class Anime:
     def __init__(self, Networking=None, Watcher=None):
         self.dependencies = {"tier": "user", "dependencies":["Networking", "Watcher"]}
         self.capabilities = ["timed"]
-        self.timing = {"unit": "seconds", "count":20}
+        self.timing = {"unit": "minutes", "count":2}
         self.networking = Networking
         # geen basics
         self.watcher = Watcher
@@ -16,25 +16,29 @@ class Anime:
         # other init stuff happens in startrun
 
     def getshows(self, number = 1):
-        base = f"https://nyaa.si/?page=rss&q={self.publishchoice}+%2B+[1080p]&c=1_2&f=0"
+        base = f"https://nyaa.si/?page=rss&q={self.publishchoice}+%2B+(1080p)&c=1_2&f=2"
         feed = feedparser.parse(base)
         entries = feed.entries
         sessiondict = {}
         x = 0
-        while x < number:
+        while x < number and x <= len(entries):
             try:
                 entry = entries[x]
+                self.logger(entry["title"])
             except IndexError:
-                self.logger(f"Tried index {x} and failed.")
-                break
+                self.logger(f"Tried index {x} and failed.") 
+                x+=1
+            if "[v0]" in entry["title"]:
+                break # don't want the weird v0 stuff from erai raws.
             try:
                 title, show, episode = self.cleantitle(entry["title"])
             except:
-                break
+                x +=1
+                number += 1
+                continue
             link = entry["link"]
-            if show in self.watchlist:
+            if self.checkshow(show):
                 self.logger(f"current: {show}")
-                #sessiondict["command"] = "anime" #not sure what this is for
                 sessiondict["title"] = show
                 sessiondict["episode"] = episode
                 if show not in self.maindict:
@@ -50,7 +54,6 @@ class Anime:
                 self.maindict[show]["lastep"] = episode
                 animedict = self.dbobj.gettable("anime")["resource"]
                 lastshow = self.dbobj.query(["lastshow", "title"], "anime")["resource"]
-                self.logger(lastshow, "alert", "yellow")
                 #if animedict.get("lastshow", {"title":"show"})["title"] != show:
                 if lastshow != show:
                     self.download(show, link)
@@ -74,17 +77,27 @@ class Anime:
                     Database().write("lastshow", sessiondict, "anime")
 
 
-                x += 1 else:
+                x += 1
+            else:
                 number += 1
                 x += 1
         Database().write("maindict", self.maindict, "anime")
         if self.retval:
-            return self.retval
+            tmp = self.retval
+            self.retval = None
+            return tmp
 
 
+    def checkshow(self, show):
+        # lets you check for substrings of shows as well. e.g. "One" will match "One Piece".
+        res = [s for s in self.watchlist if show in s]
+        if len(res) > 0:
+            return True
+        else:
+            return False
 
     def cleantitle(self, title):
-        pattern = f"\[{self.publishchoice}\] (.*) - ([0-9]*).* .*\[1080p\].*.mkv"
+        pattern = f"\[{self.publishchoice}\] (.*) - ([0-9]*) .*\(1080p\).*.mkv"
         try:
             res = re.search(pattern, title)
             show = res.group(1)
@@ -93,7 +106,7 @@ class Anime:
             return newtitle, show, episode
         except:
             self.logger(f"Failure to parse title: {title}", "alert", "red")
-            exit(1)
+            return None
 
     def getinfo(self, name):
         query = "query($title: String){Media (search: $title, type: ANIME){episodes, bannerImage, coverImage{extraLarge}}}" # this is graphQL, not REST
@@ -103,7 +116,6 @@ class Anime:
         self.logger(response)
         preurl = json.loads(response.text)["data"]["Media"]
 
-        self.logger(preurl, "debug", "red" )
         coverdict = preurl["coverImage"]
         bannerurl = preurl["bannerImage"]
         maxepisodes = preurl["episodes"]
@@ -136,7 +148,7 @@ class Anime:
         from selenium.webdriver.chrome.options import Options
         from bs4 import BeautifulSoup
 
-        url = "https://www.erai-raws.info/schedule/"
+        url = "https://www.subsplease.org/schedule/"
         chrome_opts = Options()
         chrome_opts.add_argument("--headless")
         chrome_opts.add_argument("--disable-gpu")
@@ -146,11 +158,11 @@ class Anime:
         driver.get(url)
         sleep(6)
         soup = BeautifulSoup(driver.page_source, "html.parser")
-        preshows = soup.find_all("h6", "hhhh5")
+        preshows = soup.find_all("td", {"class":"all-schedule-show"})
         showlist = []
         chosenlist = []
         for show in preshows:
-            showlist.append(''.join(show.find("a").contents).strip())
+            showlist.append(''.join(show.text))
 
         for i, show in enumerate(showlist):
             print("Show number {} is: {}".format(i + 1, show))
@@ -164,7 +176,7 @@ class Anime:
     def startrun(self, number = 1):
         self.logger = Logger("Anime").logger
         self.dbobj = Database()
-        self.publishchoice = "Erai-raws"
+        self.publishchoice = "SubsPlease"
         prelist = self.dbobj.query("watchlist", "anime")
         if prelist["status"][:2] == "20":
             self.watchlist = prelist["resource"]
@@ -178,6 +190,6 @@ class Anime:
         else:
             self.maindict = {}
 
-        result = self.getshows(number)
+        result = self.getshows(1)
         if result:
             return result
